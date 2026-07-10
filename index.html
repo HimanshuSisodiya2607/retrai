@@ -1,550 +1,648 @@
 <!DOCTYPE html>
-<html>
-
+<html lang="en">
 <head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RestroAI — The AI Operating System For The Future Of Restaurants</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script type="module" src="https://unpkg.com/@google/model-viewer@3.4.0/dist/model-viewer.min.js"></script>
+<style>
+  :root{
+    --bg:#050505;
+    --bg-raised:#0b0b0d;
+    --ember:#ff5a1f;
+    --signal:#ff1f4c;
+    --amber:#ffb347;
+    --line:rgba(255,255,255,0.08);
+    --glass:rgba(255,255,255,0.035);
+    --glass-strong:rgba(255,255,255,0.06);
+    --text-hi:#f4f2ef;
+    --text-mid:#a8a6a2;
+    --text-low:#69675f;
+    --grad-ai: linear-gradient(135deg, var(--ember) 0%, var(--signal) 100%);
+    --font-display:'Space Grotesk', sans-serif;
+    --font-body:'Inter', sans-serif;
+    --font-mono:'IBM Plex Mono', monospace;
+  }
 
-<title>RestroAI | Future Restaurant Operating System</title>
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    background:var(--bg);
+    color:var(--text-hi);
+    font-family:var(--font-body);
+    overflow-x:hidden;
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  ::selection{background:var(--ember);color:#050505;}
 
-<meta name="viewport" content="width=device-width, initial-scale=1">
+  a{color:inherit;text-decoration:none;}
+  img{max-width:100%;display:block;}
 
-<link rel="stylesheet" href="style.css">
+  .wrap{max-width:1280px;margin:0 auto;padding:0 40px;}
+  @media(max-width:768px){.wrap{padding:0 22px;}}
 
+  /* ---------- ambient background ---------- */
+  #bg-canvas{
+    position:fixed;inset:0;z-index:0;pointer-events:none;
+    background:
+      radial-gradient(ellipse 900px 600px at 15% -5%, rgba(255,90,31,0.10), transparent 60%),
+      radial-gradient(ellipse 800px 700px at 100% 10%, rgba(255,31,76,0.09), transparent 55%),
+      radial-gradient(ellipse 700px 500px at 50% 100%, rgba(255,90,31,0.06), transparent 60%);
+  }
+  .grain{
+    position:fixed;inset:0;z-index:1;pointer-events:none;opacity:0.035;mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  .cursor-light{
+    position:fixed;width:480px;height:480px;border-radius:50%;
+    background:radial-gradient(circle, rgba(255,90,31,0.09), transparent 70%);
+    pointer-events:none;z-index:2;transform:translate(-50%,-50%);
+    transition:opacity .3s ease;will-change:transform;
+  }
 
-<!-- 3D + AR ENGINE -->
-<script 
-type="module"
-src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js">
-</script>
+  section{position:relative;z-index:3;}
 
+  /* ---------- reveal ---------- */
+  .reveal{opacity:0;transform:translateY(28px);transition:opacity .8s cubic-bezier(.16,1,.3,1), transform .8s cubic-bezier(.16,1,.3,1);}
+  .reveal.in{opacity:1;transform:translateY(0);}
 
+  /* ---------- nav ---------- */
+  header{
+    position:fixed;top:0;left:0;right:0;z-index:100;
+    padding:22px 0;
+    backdrop-filter:blur(16px) saturate(140%);
+    background:rgba(5,5,5,0.55);
+    border-bottom:1px solid transparent;
+    transition:border-color .3s ease, background .3s ease;
+  }
+  header.scrolled{border-color:var(--line);background:rgba(5,5,5,0.78);}
+  nav{display:flex;align-items:center;justify-content:space-between;}
+  .logo{font-family:var(--font-display);font-weight:700;font-size:20px;letter-spacing:-0.02em;display:flex;align-items:center;gap:9px;}
+  .logo-dot{width:8px;height:8px;border-radius:50%;background:var(--grad-ai);box-shadow:0 0 14px var(--ember);}
+  .nav-links{display:flex;gap:36px;font-size:14px;color:var(--text-mid);}
+  @media(max-width:900px){.nav-links{display:none;}}
+  .nav-links a{transition:color .25s ease;}
+  .nav-links a:hover{color:var(--text-hi);}
+  .btn{
+    font-family:var(--font-body);font-weight:600;font-size:14px;
+    padding:11px 22px;border-radius:100px;border:1px solid var(--line);
+    display:inline-flex;align-items:center;gap:8px;cursor:pointer;
+    transition:transform .25s cubic-bezier(.16,1,.3,1), border-color .25s ease, box-shadow .25s ease;
+  }
+  .btn-primary{background:var(--grad-ai);color:#0a0500;border:none;box-shadow:0 0 0 rgba(255,90,31,0);}
+  .btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 30px -6px rgba(255,90,31,0.55);}
+  .btn-ghost{color:var(--text-hi);background:rgba(255,255,255,0.02);}
+  .btn-ghost:hover{border-color:rgba(255,90,31,0.5);background:rgba(255,90,31,0.06);}
+
+  /* ---------- eyebrow / labels ---------- */
+  .eyebrow{
+    font-family:var(--font-mono);font-size:12px;letter-spacing:0.14em;text-transform:uppercase;
+    color:var(--ember);display:inline-flex;align-items:center;gap:8px;margin-bottom:18px;
+  }
+  .eyebrow::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--ember);box-shadow:0 0 8px var(--ember);}
+
+  h1,h2,h3{font-family:var(--font-display);letter-spacing:-0.02em;font-weight:600;}
+
+  /* ---------- HERO ---------- */
+  .hero{
+    min-height:100vh;display:flex;align-items:center;padding:150px 0 90px;
+  }
+  .hero-grid{display:grid;grid-template-columns:1.05fr 0.95fr;gap:70px;align-items:center;}
+  @media(max-width:1000px){.hero-grid{grid-template-columns:1fr;}}
+
+  .hero h1{
+    font-size:clamp(38px,5.2vw,64px);line-height:1.04;
+    background:linear-gradient(180deg,#ffffff 0%, #cfcdc8 100%);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .hero h1 .accent{
+    background:var(--grad-ai);-webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .hero p.sub{
+    margin-top:24px;font-size:17px;color:var(--text-mid);max-width:480px;line-height:1.7;
+  }
+  .hero-ctas{display:flex;gap:14px;margin-top:38px;flex-wrap:wrap;}
+  .btn-lg{padding:15px 28px;font-size:15px;}
+  .play-icon{width:16px;height:16px;border-radius:50%;border:1px solid currentColor;display:inline-flex;align-items:center;justify-content:center;font-size:8px;}
+
+  .hero-metrics{display:flex;gap:36px;margin-top:56px;padding-top:30px;border-top:1px solid var(--line);max-width:480px;}
+  .metric b{display:block;font-family:var(--font-display);font-size:24px;font-weight:600;}
+  .metric span{font-size:12px;color:var(--text-low);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:0.06em;}
+
+  /* ---------- floating dashboard ---------- */
+  .dash-stage{position:relative;perspective:1400px;}
+  .dashboard{
+    background:linear-gradient(155deg, rgba(255,255,255,0.055), rgba(255,255,255,0.015));
+    border:1px solid rgba(255,255,255,0.09);
+    border-radius:22px;padding:26px;
+    backdrop-filter:blur(22px) saturate(160%);
+    box-shadow:0 40px 90px -30px rgba(0,0,0,0.8), 0 0 60px -25px rgba(255,90,31,0.35), inset 0 1px 0 rgba(255,255,255,0.08);
+    transform:rotateY(-8deg) rotateX(4deg);
+    animation:float 7s ease-in-out infinite;
+    max-width:440px;margin-left:auto;
+  }
+  @keyframes float{0%,100%{transform:rotateY(-8deg) rotateX(4deg) translateY(0px);}50%{transform:rotateY(-6deg) rotateX(2deg) translateY(-16px);}}
+  @media(max-width:1000px){.dashboard{margin:0 auto;transform:none;animation:none;}}
+
+  .dash-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:22px;}
+  .dash-head .label{font-family:var(--font-mono);font-size:11px;color:var(--text-low);text-transform:uppercase;letter-spacing:0.08em;}
+  .dash-head .value{font-family:var(--font-display);font-size:30px;font-weight:600;margin-top:6px;}
+  .up{color:#4ade80;font-size:13px;font-family:var(--font-mono);}
+  .live-pill{
+    font-family:var(--font-mono);font-size:10px;color:var(--ember);background:rgba(255,90,31,0.1);
+    border:1px solid rgba(255,90,31,0.3);padding:5px 10px;border-radius:100px;display:flex;align-items:center;gap:6px;
+  }
+  .live-pill::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--ember);animation:pulse-dot 1.6s ease-in-out infinite;}
+  @keyframes pulse-dot{0%,100%{opacity:1;}50%{opacity:0.25;}}
+
+  .dash-row{display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:1px solid rgba(255,255,255,0.06);font-size:13px;}
+  .dash-row:last-child{border-bottom:none;}
+  .dash-row .name{color:var(--text-hi);}
+  .dash-row .meta{color:var(--text-low);font-family:var(--font-mono);font-size:11px;}
+  .dash-bar{width:60px;height:4px;background:rgba(255,255,255,0.08);border-radius:4px;overflow:hidden;margin-left:auto;margin-right:12px;}
+  .dash-bar i{display:block;height:100%;background:var(--grad-ai);border-radius:4px;}
+
+  .ai-card{
+    margin-top:20px;padding:16px;border-radius:14px;
+    background:linear-gradient(135deg, rgba(255,90,31,0.1), rgba(255,31,76,0.05));
+    border:1px solid rgba(255,90,31,0.25);
+  }
+  .ai-card .ai-label{display:flex;align-items:center;gap:7px;font-family:var(--font-mono);font-size:11px;color:var(--amber);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:9px;}
+  .ai-dot{width:6px;height:6px;border-radius:50%;background:var(--amber);box-shadow:0 0 8px var(--amber);}
+  .ai-card p{font-size:13.5px;color:var(--text-hi);line-height:1.55;}
+  .ai-card p b{color:var(--amber);font-weight:600;}
+
+  /* ---------- section shell ---------- */
+  .section{padding:130px 0;}
+  .section-head{max-width:640px;margin-bottom:64px;}
+  .section-head.center{margin-left:auto;margin-right:auto;text-align:center;}
+  .section-head h2{font-size:clamp(30px,4vw,46px);line-height:1.12;}
+  .section-head p{margin-top:18px;color:var(--text-mid);font-size:16px;line-height:1.7;}
+
+  /* ---------- AR SECTION ---------- */
+  .ar-section{
+    background:radial-gradient(ellipse 1000px 500px at 50% 0%, rgba(255,90,31,0.08), transparent 60%);
+    border-top:1px solid var(--line);border-bottom:1px solid var(--line);
+  }
+  .ar-grid{display:grid;grid-template-columns:0.95fr 1.05fr;gap:70px;align-items:center;}
+  @media(max-width:960px){.ar-grid{grid-template-columns:1fr;}}
+  .ar-grid.reverse{grid-template-columns:1.05fr 0.95fr;}
+
+  .phone-stage{display:flex;justify-content:center;position:relative;}
+  .phone{
+    width:290px;height:590px;border-radius:44px;
+    background:linear-gradient(160deg, #141414, #060606);
+    border:1px solid rgba(255,255,255,0.12);
+    padding:14px;position:relative;
+    box-shadow:0 60px 120px -40px rgba(0,0,0,0.9), 0 0 80px -30px rgba(255,90,31,0.4);
+    animation:phone-float 6s ease-in-out infinite;
+  }
+  @keyframes phone-float{0%,100%{transform:translateY(0) rotate(-1.5deg);}50%{transform:translateY(-14px) rotate(1deg);}}
+  .phone::before{
+    content:'';position:absolute;top:22px;left:50%;transform:translateX(-50%);
+    width:70px;height:18px;border-radius:20px;background:#000;z-index:5;
+  }
+  .phone-screen{
+    width:100%;height:100%;border-radius:32px;overflow:hidden;position:relative;
+    background:radial-gradient(circle at 50% 30%, #1a1310, #050505);
+  }
+  model-viewer{width:100%;height:100%;--poster-color:transparent;}
+  .phone-ui-top{
+    position:absolute;top:38px;left:0;right:0;display:flex;justify-content:space-between;padding:0 20px;z-index:6;
+  }
+  .scan-tag{font-family:var(--font-mono);font-size:10px;color:var(--amber);background:rgba(0,0,0,0.5);border:1px solid rgba(255,179,71,0.4);padding:5px 9px;border-radius:100px;backdrop-filter:blur(6px);}
+  .ar-badge{
+    position:absolute;bottom:34px;left:20px;right:20px;z-index:6;
+    background:rgba(10,8,6,0.65);backdrop-filter:blur(10px);
+    border:1px solid rgba(255,90,31,0.35);border-radius:14px;padding:12px 14px;
+    display:flex;justify-content:space-between;align-items:center;
+  }
+  .ar-badge .dish-name{font-size:13px;font-weight:600;}
+  .ar-badge .dish-price{font-family:var(--font-mono);color:var(--ember);font-size:13px;}
+  .glow-ring{
+    position:absolute;width:340px;height:340px;border-radius:50%;
+    background:radial-gradient(circle, rgba(255,90,31,0.22), transparent 65%);
+    top:50%;left:50%;transform:translate(-50%,-50%);z-index:-1;filter:blur(10px);
+  }
+
+  .ar-copy .feature-list{margin-top:30px;display:flex;flex-direction:column;gap:16px;}
+  .feature-list .item{display:flex;gap:14px;align-items:flex-start;}
+  .feature-list .ico{
+    width:34px;height:34px;border-radius:10px;background:var(--glass);border:1px solid var(--line);
+    display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--ember);font-size:15px;
+  }
+  .feature-list .item h4{font-size:15px;font-weight:600;margin-bottom:3px;}
+  .feature-list .item p{font-size:13.5px;color:var(--text-mid);}
+
+  /* ---------- JOURNEY ---------- */
+  .journey-spine{position:relative;max-width:760px;margin:0 auto;}
+  .journey-line{
+    position:absolute;left:27px;top:14px;bottom:14px;width:2px;
+    background:linear-gradient(180deg, var(--ember), var(--signal), transparent);
+    opacity:0.4;
+  }
+  @media(max-width:640px){.journey-line{left:19px;}}
+  .journey-step{
+    display:grid;grid-template-columns:56px 1fr;gap:22px;padding:22px 0;align-items:flex-start;position:relative;
+  }
+  @media(max-width:640px){.journey-step{grid-template-columns:40px 1fr;}}
+  .journey-num{
+    width:56px;height:56px;border-radius:16px;
+    background:var(--glass);border:1px solid var(--line);
+    display:flex;align-items:center;justify-content:center;
+    font-family:var(--font-mono);font-size:13px;color:var(--text-mid);
+    position:relative;z-index:2;transition:border-color .4s ease, color .4s ease, box-shadow .4s ease;
+  }
+  @media(max-width:640px){.journey-num{width:40px;height:40px;font-size:11px;}}
+  .journey-step.in .journey-num{border-color:var(--ember);color:var(--ember);box-shadow:0 0 22px -4px rgba(255,90,31,0.6);}
+  .journey-card{
+    background:var(--glass);border:1px solid var(--line);border-radius:16px;padding:20px 24px;
+    transition:border-color .4s ease, background .4s ease, transform .4s ease;
+  }
+  .journey-step.in .journey-card{border-color:rgba(255,90,31,0.28);background:rgba(255,90,31,0.035);}
+  .journey-card h4{font-size:16px;font-weight:600;margin-bottom:4px;}
+  .journey-card p{font-size:13.5px;color:var(--text-mid);}
+  .journey-card .tag{font-family:var(--font-mono);font-size:10px;color:var(--text-low);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;display:block;}
+
+  /* ---------- AI BRAIN ---------- */
+  .brain-section{
+    background:linear-gradient(180deg, transparent, rgba(255,31,76,0.035) 40%, transparent);
+    border-top:1px solid var(--line);border-bottom:1px solid var(--line);
+  }
+  .brain-panel{
+    border-radius:24px;border:1px solid rgba(255,90,31,0.22);
+    background:linear-gradient(160deg, rgba(255,90,31,0.05), rgba(5,5,5,0.4));
+    backdrop-filter:blur(20px);padding:8px;position:relative;overflow:hidden;
+  }
+  .brain-panel::before{
+    content:'';position:absolute;inset:0;
+    background:radial-gradient(circle at 20% 20%, rgba(255,90,31,0.12), transparent 45%);
+    pointer-events:none;
+  }
+  .brain-header{
+    display:flex;justify-content:space-between;align-items:center;padding:18px 22px;border-bottom:1px solid rgba(255,255,255,0.06);
+  }
+  .brain-header .title{font-family:var(--font-mono);font-size:12px;color:var(--text-mid);letter-spacing:0.08em;text-transform:uppercase;display:flex;align-items:center;gap:9px;}
+  .brain-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:rgba(255,255,255,0.06);}
+  @media(max-width:860px){.brain-cards{grid-template-columns:1fr;}}
+  .brain-card{background:#08070680;padding:26px 24px;position:relative;}
+  .brain-card .kicker{font-size:20px;margin-bottom:14px;display:block;}
+  .brain-card h4{font-size:15px;font-weight:600;margin-bottom:8px;line-height:1.4;}
+  .brain-card .impact{
+    font-family:var(--font-mono);font-size:12px;color:var(--amber);
+    background:rgba(255,179,71,0.08);border:1px solid rgba(255,179,71,0.25);
+    padding:6px 10px;border-radius:8px;display:inline-block;margin-top:10px;
+  }
+  .brain-card.warn .impact{color:#ff8a8a;background:rgba(255,60,60,0.08);border-color:rgba(255,60,60,0.25);}
+
+  /* ---------- FEATURES ---------- */
+  .feature-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.06);border-radius:20px;overflow:hidden;}
+  @media(max-width:860px){.feature-grid{grid-template-columns:1fr 1fr;}}
+  @media(max-width:600px){.feature-grid{grid-template-columns:1fr;}}
+  .feature-card{
+    background:#07070680;padding:34px 28px;transition:background .35s ease, transform .35s ease;
+  }
+  .feature-card:hover{background:rgba(255,90,31,0.045);transform:translateY(-3px);}
+  .feature-card .num{font-family:var(--font-mono);font-size:11px;color:var(--text-low);}
+  .feature-card .ico{
+    width:44px;height:44px;border-radius:12px;margin:16px 0 18px;
+    background:var(--grad-ai);display:flex;align-items:center;justify-content:center;font-size:19px;
+    box-shadow:0 0 24px -6px rgba(255,90,31,0.6);
+  }
+  .feature-card h3{font-size:17px;font-weight:600;margin-bottom:8px;}
+  .feature-card p{font-size:13.5px;color:var(--text-mid);line-height:1.6;}
+
+  /* ---------- CTA ---------- */
+  .cta-section{padding:150px 0;text-align:center;position:relative;}
+  .cta-glow{
+    position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+    width:700px;height:400px;background:radial-gradient(ellipse, rgba(255,90,31,0.16), transparent 65%);
+    pointer-events:none;z-index:-1;
+  }
+  .cta-section h2{font-size:clamp(30px,5vw,52px);max-width:720px;margin:0 auto;line-height:1.1;}
+  .cta-section p{margin:22px auto 38px;color:var(--text-mid);max-width:460px;font-size:16px;}
+
+  footer{border-top:1px solid var(--line);padding:50px 0;}
+  .footer-row{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:20px;}
+  .footer-row .fine{font-size:13px;color:var(--text-low);font-family:var(--font-mono);}
+
+  @media (prefers-reduced-motion: reduce){
+    *{animation-duration:0.01ms !important;animation-iteration-count:1 !important;transition-duration:0.01ms !important;}
+  }
+
+  :focus-visible{outline:2px solid var(--ember);outline-offset:3px;}
+</style>
 </head>
-
-
 <body>
 
+<div id="bg-canvas"></div>
+<div class="grain"></div>
+<div class="cursor-light" id="cursorLight"></div>
 
-<div class="bg-glow"></div>
-
-
-
-<!-- NAVBAR -->
-
-
-<nav>
-
-
-<div class="logo">
-Restro<span>AI</span>
-</div>
-
-
-<div class="links">
-
-<a>Platform</a>
-<a>AR Menu</a>
-<a>AI Brain</a>
-<a>Pricing</a>
-
-</div>
-
-
-<button>
-Get Started
-</button>
-
-
-</nav>
-
-
-
-
+<header id="siteHeader">
+  <div class="wrap">
+    <nav>
+      <div class="logo"><span class="logo-dot"></span>RestroAI</div>
+      <div class="nav-links">
+        <a href="#ar">AR Menu</a>
+        <a href="#journey">How it works</a>
+        <a href="#brain">AI Brain</a>
+        <a href="#features">Platform</a>
+      </div>
+      <div style="display:flex;gap:10px;">
+        <a href="#" class="btn btn-ghost">Sign in</a>
+        <a href="#" class="btn btn-primary">Start Modernizing</a>
+      </div>
+    </nav>
+  </div>
+</header>
 
 <!-- HERO -->
-
-
 <section class="hero">
+  <div class="wrap hero-grid">
+    <div class="reveal in">
+      <div class="eyebrow">Restaurant Operating System</div>
+      <h1>The AI Operating System<br>For The <span class="accent">Future</span> Of Restaurants</h1>
+      <p class="sub">Automate ordering, create immersive AR food experiences, and let AI optimize your restaurant growth — all from one intelligent system.</p>
+      <div class="hero-ctas">
+        <a href="#" class="btn btn-primary btn-lg">Start Modernizing</a>
+        <a href="#ar" class="btn btn-ghost btn-lg"><span class="play-icon">▸</span> Watch Demo</a>
+      </div>
+      <div class="hero-metrics">
+        <div class="metric"><b>3.2×</b><span>Faster Table Turns</span></div>
+        <div class="metric"><b>28%</b><span>Higher Avg. Order</span></div>
+        <div class="metric"><b>24/7</b><span>AI Strategist</span></div>
+      </div>
+    </div>
 
+    <div class="dash-stage reveal in">
+      <div class="dashboard">
+        <div class="dash-head">
+          <div>
+            <div class="label">Today's Revenue</div>
+            <div class="value">₹54,280 <span class="up">↑ 18%</span></div>
+          </div>
+          <div class="live-pill">LIVE</div>
+        </div>
 
-<div class="hero-text">
+        <div class="dash-head" style="margin-bottom:10px;">
+          <div class="label">Live Orders</div>
+        </div>
+        <div class="dash-row"><span class="name">Table 04 — Margherita, Iced Tea</span><span class="meta">2m</span></div>
+        <div class="dash-row"><span class="name">Table 11 — Butter Chicken Bowl</span><span class="meta">Kitchen</span></div>
+        <div class="dash-row"><span class="name">Table 07 — Truffle Pasta ×2</span><span class="meta">Ready</span></div>
 
+        <div class="dash-head" style="margin:18px 0 6px;">
+          <div class="label">Popular Dishes</div>
+        </div>
+        <div class="dash-row"><span class="name">Truffle Pasta</span><div class="dash-bar"><i style="width:88%"></i></div><span class="meta">88%</span></div>
+        <div class="dash-row"><span class="name">Butter Chicken</span><div class="dash-bar"><i style="width:71%"></i></div><span class="meta">71%</span></div>
 
-<div class="tag">
-⚡ AI Powered Restaurant Future
-</div>
-
-
-<h1>
-
-The Smartest Way
-
-<span>
-To Run Restaurants
-</span>
-
-
-</h1>
-
-
-<p>
-
-Transform your restaurant with AI ordering,
-AR food experiences, automated kitchen flow
-and intelligent business decisions.
-
-</p>
-
-
-
-<div class="hero-buttons">
-
-<button class="orange">
-Start Modernizing →
-</button>
-
-<button class="outline">
-Watch Demo
-</button>
-
-</div>
-
-
-</div>
-
-
-
-
-
-<div class="hero-card">
-
-
-<h3>
-Restaurant AI Brain
-</h3>
-
-
-<div class="sales">
-
-<p>Today's Sales</p>
-
-<h2>₹54,280 ↑</h2>
-
-</div>
-
-
-
-<div class="ai">
-
-🤖 AI Strategy
-
-<p>
-Create Pasta Combo tonight.
-Expected growth +18%
-</p>
-
-</div>
-
-
-
-<div class="mini">
-
-<div>
-🍕
-<b>Pizza</b>
-<p>142 orders</p>
-</div>
-
-
-<div>
-🍜
-<b>Noodles</b>
-<p>98 orders</p>
-</div>
-
-
-</div>
-
-
-
-</div>
-
-
-
+        <div class="ai-card">
+          <div class="ai-label"><span class="ai-dot"></span>AI Insight</div>
+          <p>Your <b>pasta demand</b> increases <b>42%</b> on weekends. Launch a combo offer tonight.</p>
+        </div>
+      </div>
+    </div>
+  </div>
 </section>
 
-
-
-
-
-
-
-
-<!-- AR MAIN PRODUCT -->
-
-
-
-<section class="ar">
-
-
-
-<div>
-
-
-<div class="tag">
-🍽 AI + Augmented Reality
-</div>
-
-
-<h2>
-
-Your Menu Becomes
-
-<span>
-An Experience
-</span>
-
-</h2>
-
-
-<p>
-
-Customers scan the QR code,
-view realistic 3D dishes on their table
-and order instantly without waiting
-for staff.
-
-</p>
-
-
-<button class="orange">
-Explore AR Menu →
-</button>
-
-
-
-</div>
-
-
-
-
-
-<!-- REAL 3D AR FOOD VIEW -->
-
-
-<div class="phone">
-
-
-<div class="camera">
-
-
-<model-viewer
-
-src="models/cake_table_ready_v2.glb"
-
-camera-controls
-
-auto-rotate
-
-ar
-
-ar-modes="webxr scene-viewer quick-look"
-
-shadow-intensity="1"
-
-exposure="1.2"
-
-environment-image="neutral"
-
-
-style="
-width:100%;
-height:100%;
-"
-
-
->
-
-
-<button 
-slot="ar-button"
-class="ar-btn">
-
-View On Table
-
-</button>
-
-
-</model-viewer>
-
-
-
-</div>
-
-
-<h3>
-Premium Burger
-</h3>
-
-
-<p>
-Rotate • Zoom • View in AR
-</p>
-
-
-<button>
-Add To Order
-</button>
-
-
-
-</div>
-
-
-
+<!-- AR SECTION -->
+<section class="section ar-section" id="ar">
+  <div class="wrap">
+    <div class="ar-grid">
+      <div class="phone-stage reveal">
+        <div class="glow-ring"></div>
+        <div class="phone">
+          <div class="phone-screen">
+            <div class="phone-ui-top">
+              <span class="scan-tag">● AR MODE</span>
+              <span class="scan-tag">Table 07</span>
+            </div>
+            <model-viewer
+              src="models/cake_table_ready_v2.glb"
+              alt="3D AR preview of a dish"
+              camera-controls
+              auto-rotate
+              auto-rotate-delay="0"
+              rotation-per-second="24deg"
+              camera-orbit="10deg 78deg 105%"
+              field-of-view="26deg"
+              shadow-intensity="1.2"
+              shadow-softness="0.9"
+              exposure="1.1"
+              environment-image="neutral"
+              ar
+              ar-modes="webxr scene-viewer quick-look"
+              interaction-prompt="none">
+            </model-viewer>
+            <div class="ar-badge">
+              <span class="dish-name">Signature Dish — AR Preview</span>
+              <span class="dish-price">₹340</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ar-copy reveal">
+        <div class="eyebrow">3D AR Food Experience</div>
+        <h2 style="font-size:clamp(28px,3.6vw,40px);line-height:1.15;">Customers See Food Before They Order</h2>
+        <p style="margin-top:18px;color:var(--text-mid);font-size:16px;line-height:1.75;">Turn normal menus into immersive 3D experiences. Customers scan a QR code, explore realistic dishes in AR, and order instantly — no waiter required.</p>
+
+        <div class="feature-list">
+          <div class="item">
+            <div class="ico">◐</div>
+            <div><h4>AI-generated 3D models</h4><p>Every dish rendered as a photoreal, rotatable model — no photography needed.</p></div>
+          </div>
+          <div class="item">
+            <div class="ico">⟲</div>
+            <div><h4>Full gesture control</h4><p>Pinch to zoom, drag to rotate, place it right on the table in AR.</p></div>
+          </div>
+          <div class="item">
+            <div class="ico">▣</div>
+            <div><h4>Order from the model</h4><p>One tap on the dish sends the order straight to the kitchen display.</p></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </section>
 
+<!-- JOURNEY -->
+<section class="section" id="journey">
+  <div class="wrap">
+    <div class="section-head center reveal">
+      <div class="eyebrow" style="justify-content:center;">The Customer Journey</div>
+      <h2>Six Steps. Zero Waiters. Total Intelligence.</h2>
+      <p>Every interaction feeds the system — the restaurant gets smarter with every table you seat.</p>
+    </div>
 
+    <div class="journey-spine">
+      <div class="journey-line"></div>
 
-
-
-
-
-
-
-<!-- PROCESS -->
-
-
-<section class="process">
-
-
-<h2>
-How Restaurant Automation Works
-</h2>
-
-
-<div class="steps">
-
-
-<div>
-
-📱
-
-<h3>
-Scan QR
-</h3>
-
-<p>
-Customer opens smart menu.
-</p>
-
-
-</div>
-
-
-
-<div>
-
-🥘
-
-<h3>
-AR Preview
-</h3>
-
-<p>
-Experience food before ordering.
-</p>
-
-
-</div>
-
-
-
-<div>
-
-👨‍🍳
-
-<h3>
-Kitchen Receive
-</h3>
-
-<p>
-Orders reach kitchen instantly.
-</p>
-
-
-</div>
-
-
-
-<div>
-
-🧠
-
-<h3>
-AI Learns
-</h3>
-
-<p>
-AI creates growth strategies.
-</p>
-
-
-</div>
-
-
-
-</div>
-
-
+      <div class="journey-step reveal">
+        <div class="journey-num">01</div>
+        <div class="journey-card"><span class="tag">Arrival</span><h4>Customer sits at the table</h4><p>No app download, no waiting for a host to seat them into the system.</p></div>
+      </div>
+      <div class="journey-step reveal">
+        <div class="journey-num">02</div>
+        <div class="journey-card"><span class="tag">Scan</span><h4>Scans the table QR code</h4><p>Instantly connects to their table — the system knows exactly where they're sitting.</p></div>
+      </div>
+      <div class="journey-step reveal">
+        <div class="journey-num">03</div>
+        <div class="journey-card"><span class="tag">Explore</span><h4>Opens the interactive AR menu</h4><p>Rotates, zooms, and previews dishes in photoreal 3D before deciding.</p></div>
+      </div>
+      <div class="journey-step reveal">
+        <div class="journey-num">04</div>
+        <div class="journey-card"><span class="tag">Order</span><h4>Orders without a waiter</h4><p>Confirms the order directly from their phone — customized, instant, accurate.</p></div>
+      </div>
+      <div class="journey-step reveal">
+        <div class="journey-num">05</div>
+        <div class="journey-card"><span class="tag">Fulfill</span><h4>Kitchen receives it instantly</h4><p>Orders route straight to the kitchen display system, sorted by prep time.</p></div>
+      </div>
+      <div class="journey-step reveal">
+        <div class="journey-num">06</div>
+        <div class="journey-card"><span class="tag">Learn</span><h4>AI learns from the data</h4><p>Every order sharpens pricing, menu, and marketing recommendations.</p></div>
+      </div>
+    </div>
+  </div>
 </section>
 
+<!-- AI BRAIN -->
+<section class="section brain-section" id="brain">
+  <div class="wrap">
+    <div class="section-head center reveal">
+      <div class="eyebrow" style="justify-content:center;">AI Restaurant Brain</div>
+      <h2>Your Restaurant Finally Thinks</h2>
+      <p>A live strategist reading every order, every table, every rupee — and telling you exactly what to do next.</p>
+    </div>
 
-
-
-
-
-
-
-
+    <div class="brain-panel reveal">
+      <div class="brain-header">
+        <div class="title"><span class="ai-dot" style="background:var(--ember);box-shadow:0 0 8px var(--ember);"></span>AI Command Center — Live Analysis</div>
+        <div class="live-pill">ANALYZING</div>
+      </div>
+      <div class="brain-cards">
+        <div class="brain-card">
+          <span class="kicker">💡</span>
+          <h4>Increase burger price by ₹20</h4>
+          <p style="font-size:13px;color:var(--text-mid);">Demand is inelastic in this range based on 30-day order data.</p>
+          <span class="impact">Predicted revenue +12%</span>
+        </div>
+        <div class="brain-card">
+          <span class="kicker">🔥</span>
+          <h4>Create a Friday dinner combo</h4>
+          <p style="font-size:13px;color:var(--text-mid);">Friday 7–9pm shows the highest unmet demand density this month.</p>
+          <span class="impact">Expected orders +25%</span>
+        </div>
+        <div class="brain-card warn">
+          <span class="kicker">⚠</span>
+          <h4>Remove 3 low-performing dishes</h4>
+          <p style="font-size:13px;color:var(--text-mid);">These items sell under 2×/week and drive avoidable ingredient waste.</p>
+          <span class="impact">Reduce waste ~9%</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
 
 <!-- FEATURES -->
+<section class="section" id="features">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <div class="eyebrow">The Platform</div>
+      <h2>Every System Your Restaurant Needs. One AI Core.</h2>
+      <p>Built to replace six disconnected tools with one intelligent operating layer.</p>
+    </div>
 
-
-<section class="features">
-
-
-<h2>
-Complete Restaurant OS
-</h2>
-
-
-<div class="grid">
-
-
-<div>
-📲
-<h3>Smart Ordering</h3>
-<p>No waiter dependency.</p>
-</div>
-
-
-
-<div>
-🍝
-<h3>3D AR Menu</h3>
-<p>Convert dishes into experiences.</p>
-</div>
-
-
-
-
-<div>
-📊
-<h3>Analytics</h3>
-<p>Know your customers.</p>
-</div>
-
-
-
-
-<div>
-🤖
-<h3>AI Strategy</h3>
-<p>AI suggests business growth.</p>
-</div>
-
-
-
-
-<div>
-📦
-<h3>Inventory</h3>
-<p>Reduce wastage.</p>
-</div>
-
-
-
-
-<div>
-🔥
-<h3>Marketing AI</h3>
-<p>Create offers automatically.</p>
-</div>
-
-
-
-</div>
-
-
+    <div class="feature-grid reveal">
+      <div class="feature-card">
+        <div class="num">01</div>
+        <div class="ico">▣</div>
+        <h3>Smart QR Ordering</h3>
+        <p>Customers order directly from their table — no app, no waiter, no wait.</p>
+      </div>
+      <div class="feature-card">
+        <div class="num">02</div>
+        <div class="ico">◐</div>
+        <h3>3D AR Menu</h3>
+        <p>AI-generated, photoreal dishes customers can explore before they order.</p>
+      </div>
+      <div class="feature-card">
+        <div class="num">03</div>
+        <div class="ico">⌘</div>
+        <h3>Kitchen Automation</h3>
+        <p>Orders flow directly to kitchen display screens — sorted, timed, prioritized.</p>
+      </div>
+      <div class="feature-card">
+        <div class="num">04</div>
+        <div class="ico">↗</div>
+        <h3>AI Growth Engine</h3>
+        <p>Continuously analyzes customer behavior and sales to surface new revenue.</p>
+      </div>
+      <div class="feature-card">
+        <div class="num">05</div>
+        <div class="ico">◈</div>
+        <h3>Inventory Intelligence</h3>
+        <p>Predicts shortages before they happen and reduces ingredient waste.</p>
+      </div>
+      <div class="feature-card">
+        <div class="num">06</div>
+        <div class="ico">✦</div>
+        <h3>Marketing AI</h3>
+        <p>Automatically drafts and launches offers and promotions that convert.</p>
+      </div>
+    </div>
+  </div>
 </section>
 
-
-
-
-
-
-
-<!-- AI -->
-
-
-<section class="brain">
-
-
-<h2>
-
-Your Restaurant Finally Thinks
-
-</h2>
-
-
-
-<div class="brain-box">
-
-<div>
-💡 Increase burger price by ₹20
-</div>
-
-<div>
-🔥 Weekend combo can increase revenue
-</div>
-
-<div>
-⚠ Remove slow moving dishes
-</div>
-
-
-</div>
-
-
+<!-- CTA -->
+<section class="cta-section">
+  <div class="cta-glow"></div>
+  <div class="wrap reveal">
+    <div class="eyebrow" style="justify-content:center;">Get Started</div>
+    <h2>Give Your Restaurant An Operating System, Not Just An App.</h2>
+    <p>Join the restaurants already running on RestroAI's intelligent core.</p>
+    <a href="#" class="btn btn-primary btn-lg">Start Modernizing</a>
+  </div>
 </section>
 
+<footer>
+  <div class="wrap footer-row">
+    <div class="logo"><span class="logo-dot"></span>RestroAI</div>
+    <div class="fine">© 2026 RestroAI — The AI Operating System For Restaurants</div>
+  </div>
+</footer>
 
+<script>
+  // header scroll state
+  const header = document.getElementById('siteHeader');
+  window.addEventListener('scroll', () => {
+    header.classList.toggle('scrolled', window.scrollY > 20);
+  }, {passive:true});
 
+  // cursor light
+  const cursorLight = document.getElementById('cursorLight');
+  window.addEventListener('pointermove', (e) => {
+    cursorLight.style.transform = `translate(${e.clientX}px, ${e.clientY}px) translate(-50%,-50%)`;
+  });
 
-
-
-<section class="footer">
-
-
-<h1>
-Build The Future Restaurant Today
-</h1>
-
-
-<button class="orange">
-Start Now
-</button>
-
-
-
-</section>
-
-
-
-
-
-<script src="script.js"></script>
-
+  // scroll reveal
+  const revealEls = document.querySelectorAll('.reveal, .journey-step');
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if(entry.isIntersecting){
+        entry.target.classList.add('in');
+        io.unobserve(entry.target);
+      }
+    });
+  }, {threshold:0.15, rootMargin:'0px 0px -60px 0px'});
+  revealEls.forEach(el => io.observe(el));
+</script>
 
 </body>
-
 </html>
