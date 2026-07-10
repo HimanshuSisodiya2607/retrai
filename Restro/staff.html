@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Staff & Roles — RestroAI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<div id="bg-glow"></div>
+
+<div class="shell">
+  <aside class="sidebar">
+    <div class="logo"><span class="logo-dot"></span>RestroAI</div>
+    <div class="nav-group">
+      <div class="group-label">Operate</div>
+      <a href="overview.html" class="nav-item"><span class="ico">▦</span>Overview</a>
+      <a href="orders.html" class="nav-item"><span class="ico">☰</span>Live Orders<span class="badge" id="navOrderCount">0</span></a>
+      <a href="tables.html" class="nav-item"><span class="ico">▥</span>Tables<span class="badge" id="navTableCount">0</span></a>
+      <a href="menu.html" class="nav-item"><span class="ico">▣</span>Menu</a>
+      <a href="inventory.html" class="nav-item"><span class="ico">◈</span>Inventory<span class="badge">3</span></a>
+    </div>
+    <div class="nav-group">
+      <div class="group-label">Grow</div>
+      <a href="ai-insights.html" class="nav-item"><span class="ico">✦</span>AI Insights</a>
+      <a href="marketing.html" class="nav-item"><span class="ico">↗</span>Marketing</a>
+      <a href="ar-studio.html" class="nav-item"><span class="ico">◐</span>AR Menu Studio</a>
+      <a href="analytics.html" class="nav-item"><span class="ico">▤</span>Analytics</a>
+    </div>
+    <div class="nav-group">
+      <div class="group-label">Manage</div>
+      <a href="settings.html" class="nav-item"><span class="ico">⚙</span>Settings</a>
+      <a href="staff.html" class="nav-item"><span class="ico">◎</span>Staff &amp; Roles</a>
+    </div>
+    <div class="sidebar-foot">
+      <div class="owner-card">
+        <div class="owner-avatar">SB</div>
+        <div><div class="owner-name">Spice Bazaar</div><div class="owner-role">Owner Dashboard</div></div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div><h1>Staff &amp; Roles</h1><div class="sub">Manage your team and shift status</div></div>
+      <div class="topbar-right">
+        <div class="search-box">🔍 Search orders, dishes…</div>
+        <div class="icon-btn">🔔<span class="dot"></span></div>
+        <div class="restaurant-pill"><span class="dot"></span>Open — Dine-in</div>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <div class="panel">
+        <div class="panel-inner-head">
+          <div class="title">Team</div>
+          <button class="btn btn-primary btn-sm" onclick="alert('Invite flow coming soon (demo).')">+ Invite Staff</button>
+        </div>
+        <div class="staff-row head">
+          <div></div><div>Name</div><div>Department</div><div>Status</div><div></div>
+        </div>
+        <div class="staff-row">
+          <div class="staff-avatar">RK</div>
+          <div><div class="staff-name">Ravi Kumar</div><div class="staff-role">Head Chef</div></div>
+          <div>Kitchen</div>
+          <div><span class="status-pill status-active">Active</span></div>
+          <div><button class="advance-btn" onclick="alert('Editing Ravi Kumar (demo).')">Edit ▸</button></div>
+        </div>
+        <div class="staff-row">
+          <div class="staff-avatar">PM</div>
+          <div><div class="staff-name">Priya Mehta</div><div class="staff-role">Manager</div></div>
+          <div>Floor</div>
+          <div><span class="status-pill status-active">Active</span></div>
+          <div><button class="advance-btn" onclick="alert('Editing Priya Mehta (demo).')">Edit ▸</button></div>
+        </div>
+        <div class="staff-row">
+          <div class="staff-avatar">AS</div>
+          <div><div class="staff-name">Arjun Singh</div><div class="staff-role">Waiter</div></div>
+          <div>Floor</div>
+          <div><span class="status-pill status-active">Active</span></div>
+          <div><button class="advance-btn" onclick="alert('Editing Arjun Singh (demo).')">Edit ▸</button></div>
+        </div>
+        <div class="staff-row">
+          <div class="staff-avatar">NJ</div>
+          <div><div class="staff-name">Neha Jain</div><div class="staff-role">Waiter</div></div>
+          <div>Floor</div>
+          <div><span class="status-pill status-off">Off shift</span></div>
+          <div><button class="advance-btn" onclick="alert('Editing Neha Jain (demo).')">Edit ▸</button></div>
+        </div>
+        <div class="staff-row">
+          <div class="staff-avatar">VS</div>
+          <div><div class="staff-name">Vikram Shah</div><div class="staff-role">Line Cook</div></div>
+          <div>Kitchen</div>
+          <div><span class="status-pill status-active">Active</span></div>
+          <div><button class="advance-btn" onclick="alert('Editing Vikram Shah (demo).')">Edit ▸</button></div>
+        </div>
+        <div class="staff-row">
+          <div class="staff-avatar">DK</div>
+          <div><div class="staff-name">Divya Kapoor</div><div class="staff-role">Cashier</div></div>
+          <div>Front desk</div>
+          <div><span class="status-pill status-off">Off shift</span></div>
+          <div><button class="advance-btn" onclick="alert('Editing Divya Kapoor (demo).')">Edit ▸</button></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="assets/app.js"></script>
+
+</body>
+</html>

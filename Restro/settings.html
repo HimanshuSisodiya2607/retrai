@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Settings — RestroAI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<div id="bg-glow"></div>
+
+<div class="shell">
+  <aside class="sidebar">
+    <div class="logo"><span class="logo-dot"></span>RestroAI</div>
+    <div class="nav-group">
+      <div class="group-label">Operate</div>
+      <a href="overview.html" class="nav-item"><span class="ico">▦</span>Overview</a>
+      <a href="orders.html" class="nav-item"><span class="ico">☰</span>Live Orders<span class="badge" id="navOrderCount">0</span></a>
+      <a href="tables.html" class="nav-item"><span class="ico">▥</span>Tables<span class="badge" id="navTableCount">0</span></a>
+      <a href="menu.html" class="nav-item"><span class="ico">▣</span>Menu</a>
+      <a href="inventory.html" class="nav-item"><span class="ico">◈</span>Inventory<span class="badge">3</span></a>
+    </div>
+    <div class="nav-group">
+      <div class="group-label">Grow</div>
+      <a href="ai-insights.html" class="nav-item"><span class="ico">✦</span>AI Insights</a>
+      <a href="marketing.html" class="nav-item"><span class="ico">↗</span>Marketing</a>
+      <a href="ar-studio.html" class="nav-item"><span class="ico">◐</span>AR Menu Studio</a>
+      <a href="analytics.html" class="nav-item"><span class="ico">▤</span>Analytics</a>
+    </div>
+    <div class="nav-group">
+      <div class="group-label">Manage</div>
+      <a href="settings.html" class="nav-item"><span class="ico">⚙</span>Settings</a>
+      <a href="staff.html" class="nav-item"><span class="ico">◎</span>Staff &amp; Roles</a>
+    </div>
+    <div class="sidebar-foot">
+      <div class="owner-card">
+        <div class="owner-avatar">SB</div>
+        <div><div class="owner-name">Spice Bazaar</div><div class="owner-role">Owner Dashboard</div></div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div><h1>Settings</h1><div class="sub">Restaurant profile and preferences</div></div>
+      <div class="topbar-right">
+        <div class="search-box">🔍 Search orders, dishes…</div>
+        <div class="icon-btn">🔔<span class="dot"></span></div>
+        <div class="restaurant-pill"><span class="dot"></span>Open — Dine-in</div>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <div class="panel" style="padding:24px 26px;max-width:720px;">
+        <div class="settings-section">
+          <h3>Restaurant Profile</h3>
+          <div class="field-row">
+            <div class="field"><label>Restaurant Name</label><input type="text" value="Spice Bazaar"></div>
+            <div class="field"><label>Cuisine Type</label><input type="text" value="Multi-cuisine"></div>
+          </div>
+          <div class="field"><label>Address</label><input type="text" value="Sardarpura, Jodhpur, Rajasthan"></div>
+          <div class="field-row">
+            <div class="field"><label>Opening Time</label><input type="text" value="12:00 PM"></div>
+            <div class="field"><label>Closing Time</label><input type="text" value="11:30 PM"></div>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <h3>Notifications</h3>
+          <div class="toggle-row"><div><div class="t-label">New order alerts</div><div class="t-sub">Ping when a new order comes in</div></div><button class="toggle on" onclick="this.classList.toggle('on')"></button></div>
+          <div class="toggle-row"><div><div class="t-label">Low inventory alerts</div><div class="t-sub">Notify when stock drops below reorder level</div></div><button class="toggle on" onclick="this.classList.toggle('on')"></button></div>
+          <div class="toggle-row"><div><div class="t-label">Weekly AI insight digest</div><div class="t-sub">Email summary every Monday</div></div><button class="toggle" onclick="this.classList.toggle('on')"></button></div>
+        </div>
+
+        <div class="settings-section" style="border-bottom:none;margin-bottom:0;">
+          <h3>Danger Zone</h3>
+          <div class="toggle-row"><div><div class="t-label">Reset demo data</div><div class="t-sub">Clears orders, tables and menu back to defaults</div></div><button class="btn btn-ghost btn-sm" onclick="if(confirm('Reset all demo data?')){localStorage.removeItem('restroai_panel_state_v2'); location.reload();}">Reset</button></div>
+        </div>
+
+        <div class="modal-actions" style="justify-content:flex-start;margin-top:24px;">
+          <button class="btn btn-primary" onclick="alert('Settings saved (demo).')">Save Changes</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="assets/app.js"></script>
+
+</body>
+</html>
