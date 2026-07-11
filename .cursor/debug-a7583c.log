@@ -1,0 +1,1 @@
+{"sessionId":"a7583c","runId":"stack-fix","location":"app.js:initMobileNav","message":"Sidebar stack probe","data":{"sidebarOpen":true,"backdropParent":"shell","sidebarZ":"300","backdropZ":"290","hitTag":null,"hitClass":null,"isNavHit":false},"timestamp":1783767153389}

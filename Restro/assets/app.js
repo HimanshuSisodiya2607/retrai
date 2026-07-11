@@ -1,5 +1,4 @@
-
-  const STORAGE_KEY = 'restroai_panel_state_v2';
+const STORAGE_KEY = 'restroai_panel_state_v2';
 
   function seedTables(){
     const seats = [4,4,2,6,4,2,4,4,6,2,4,4,2,4,4];
@@ -17,13 +16,13 @@
       {id:6, tableId:9, items:'Veg Biryani, Raita', amount:390, status:'kitchen', ts:Date.now()-4*60000}
     ],
     menu: [
-      {id:1, emoji:'🍝', cat:'Mains', name:'Truffle Pasta', price:440, desc:'Hand-rolled pasta, black truffle cream.', active:true},
+      {id:1, emoji:'🍝', cat:'Mains', name:'Truffle Pasta', price:440, desc:'Hand-rolled pasta, black truffle cream.', active:true, glb:'https://modelviewer.dev/shared-assets/models/Astronaut.glb'},
       {id:2, emoji:'🍔', cat:'Mains', name:'Signature Burger', price:320, desc:'Smash patty, aged cheddar, house sauce.', active:true},
       {id:3, emoji:'🍛', cat:'Mains', name:'Butter Chicken Bowl', price:360, desc:'Slow-simmered tomato butter gravy.', active:true},
       {id:4, emoji:'🥗', cat:'Starters', name:'Quinoa Salad', price:260, desc:'Quinoa, citrus, roasted vegetables.', active:false},
       {id:5, emoji:'🍰', cat:'Desserts', name:'Molten Brownie', price:210, desc:'Warm brownie, vanilla bean ice cream.', active:true},
       {id:6, emoji:'🍹', cat:'Beverages', name:'Cold Coffee', price:150, desc:'Espresso, cold milk, whipped cream.', active:true},
-      {id:7, emoji:'🍕', cat:'Mains', name:'Margherita Pizza', price:340, desc:'San Marzano tomato, fresh basil.', active:true},
+      {id:7, emoji:'🍕', cat:'Mains', name:'Margherita Pizza', price:340, desc:'San Marzano tomato, fresh basil.', active:true, glb:'https://modelviewer.dev/shared-assets/models/Astronaut.glb'},
       {id:8, emoji:'🍜', cat:'Starters', name:'Veg Biryani', price:280, desc:'Fragrant basmati, saffron, vegetables.', active:false}
     ]
   };
@@ -217,6 +216,7 @@
         </div>
         <div><span class="cat">${d.cat}</span><h4>${d.name}</h4></div>
         ${d.desc ? `<div class="desc">${d.desc}</div>` : ''}
+        ${d.glb ? `<div class="impact" style="width:fit-content;">📱 AR model attached</div>` : ''}
         <div class="dish-foot">
           <span class="dish-price">₹${d.price}</span>
           <div class="dish-actions">
@@ -259,6 +259,7 @@
       document.getElementById('dishCat').value = dish.cat;
       document.getElementById('dishPrice').value = dish.price;
       document.getElementById('dishDesc').value = dish.desc || '';
+      document.getElementById('dishGlb').value = dish.glb || '';
       document.getElementById('dishActive').checked = dish.active;
     } else {
       modalTitle.textContent = 'Add Menu Item';
@@ -268,6 +269,7 @@
       document.getElementById('dishCat').value = 'Mains';
       document.getElementById('dishPrice').value = '';
       document.getElementById('dishDesc').value = '';
+      document.getElementById('dishGlb').value = '';
       document.getElementById('dishActive').checked = true;
     }
     document.getElementById('menuModalOverlay').classList.add('open');
@@ -277,12 +279,14 @@
     const name = document.getElementById('dishName').value.trim();
     const price = Number(document.getElementById('dishPrice').value) || 0;
     if(!name || !price){ alert('Please add at least a name and price.'); return; }
+    const glbUrl = document.getElementById('dishGlb').value.trim();
     const payload = {
       emoji: document.getElementById('dishEmoji').value.trim() || '🍽',
       name,
       cat: document.getElementById('dishCat').value,
       price,
       desc: document.getElementById('dishDesc').value.trim(),
+      glb: glbUrl || null,
       active: document.getElementById('dishActive').checked
     };
     if(editingMenuId){
@@ -306,16 +310,17 @@
       const cards = state.tables.map(t => {
         const busy = occupied.has(t.id);
         return `
-          <div class="table-card ${busy ? 'occupied' : ''}">
+          <div class="table-card table-card-clickable ${busy ? 'occupied' : ''}" onclick="openTableMenu(${t.id})" role="button" tabindex="0">
             <div class="table-top">
               <div class="table-num">${t.name.replace('T-','')}</div>
             </div>
-            <div><h4>${t.name}</h4><span class="seats">${t.seats} seats</span></div>
+            <div><h4>${t.name}</h4><span class="seats">${t.seats} seats · Tap to open menu</span></div>
             <span class="table-status ${busy ? 'busy' : 'free'}">${busy ? 'Occupied' : 'Free'}</span>
             <div class="table-foot">
               <div class="dish-actions">
-                <button class="a" onclick="openTableModal(${t.id})" title="Edit">✎</button>
-                <button class="a" onclick="deleteTable(${t.id})" title="Delete">✕</button>
+                <button type="button" class="a" onclick="event.stopPropagation(); openQrModal(${t.id})" title="Print QR">QR</button>
+                <button type="button" class="a" onclick="event.stopPropagation(); openTableModal(${t.id})" title="Edit">✎</button>
+                <button type="button" class="a" onclick="event.stopPropagation(); deleteTable(${t.id})" title="Delete">✕</button>
               </div>
             </div>
           </div>
@@ -372,12 +377,74 @@
     renderTables();
   }
 
+  /* ---------------- TABLE QR CODES ---------------- */
+  // Builds the URL guests land on when they scan a table's QR code.
+  // Works once this site is actually hosted (http/https); opening the
+  // files directly as file:// won't produce a scannable link.
+  function tableOrderUrl(t){
+    const here = location.href.split('#')[0].split('?')[0];
+    const base = here.substring(0, here.lastIndexOf('/') + 1);
+    return base + 'customer-menu.html?table=' + t.id + '&name=' + encodeURIComponent(t.name);
+  }
+
+  function openTableMenu(id){
+    const t = state.tables.find(x => x.id === id);
+    if(!t) return;
+    location.href = tableOrderUrl(t);
+  }
+
+  function openQrModal(id){
+    const t = state.tables.find(x=>x.id===id);
+    if(!t) return;
+    const overlay = document.getElementById('qrModalOverlay');
+    if(!overlay || typeof QRCode === 'undefined') return;
+    const url = tableOrderUrl(t);
+    document.getElementById('qrModalTitle').textContent = 'QR — ' + t.name;
+    document.getElementById('qrLinkText').textContent = url;
+    const box = document.getElementById('qrCodeBox');
+    box.innerHTML = '';
+    new QRCode(box, {text: url, width: 200, height: 200, colorDark: '#111111', colorLight: '#ffffff'});
+    overlay.dataset.url = url;
+    overlay.dataset.tablename = t.name;
+    overlay.classList.add('open');
+  }
+  function closeQrModal(){
+    const overlay = document.getElementById('qrModalOverlay');
+    if(overlay) overlay.classList.remove('open');
+  }
+  function printQr(){
+    const overlay = document.getElementById('qrModalOverlay');
+    if(!overlay) return;
+    const url = overlay.dataset.url;
+    const tname = overlay.dataset.tablename;
+    const w = window.open('', '_blank', 'width=420,height=560');
+    if(!w) { alert('Please allow pop-ups to print this QR code.'); return; }
+    w.document.write(
+      '<html><head><title>' + tname + ' QR</title>' +
+      '<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><' + '/script>' +
+      '<style>body{font-family:Arial,Helvetica,sans-serif;text-align:center;padding:50px 20px;color:#111;}' +
+      'h1{font-size:22px;margin-bottom:4px;}p{color:#777;font-size:12px;margin-bottom:22px;}' +
+      '#q{display:inline-block;padding:18px;border:1px solid #eee;border-radius:14px;}' +
+      '.foot{margin-top:20px;font-size:11px;color:#aaa;letter-spacing:0.04em;}</style>' +
+      '</head><body>' +
+      '<h1>' + tname + '</h1>' +
+      '<p>Scan to view the menu &amp; order</p>' +
+      '<div id="q"></div>' +
+      '<div class="foot">RESTROAI · SCAN TO ORDER</div>' +
+      '<script>window.onload = function(){ new QRCode(document.getElementById("q"), {text: ' + JSON.stringify(url) + ', width:220, height:220}); setTimeout(function(){ window.print(); }, 350); };<' + '/script>' +
+      '</body></html>'
+    );
+    w.document.close();
+  }
+
   const orderModalOverlay = document.getElementById('orderModalOverlay');
   if(orderModalOverlay) orderModalOverlay.addEventListener('click', e => { if(e.target.id==='orderModalOverlay') closeOrderModal(); });
   const menuModalOverlay = document.getElementById('menuModalOverlay');
   if(menuModalOverlay) menuModalOverlay.addEventListener('click', e => { if(e.target.id==='menuModalOverlay') closeMenuModal(); });
   const tableModalOverlay = document.getElementById('tableModalOverlay');
   if(tableModalOverlay) tableModalOverlay.addEventListener('click', e => { if(e.target.id==='tableModalOverlay') closeTableModal(); });
+  const qrModalOverlay = document.getElementById('qrModalOverlay');
+  if(qrModalOverlay) qrModalOverlay.addEventListener('click', e => { if(e.target.id==='qrModalOverlay') closeQrModal(); });
 
   // Highlight whichever sidebar link matches the current page, so the
   // active state is always correct without hand-editing every file.
@@ -392,3 +459,31 @@
   renderOrders();
   renderMenu();
   renderTables();
+
+  (function initMobileNav(){
+    const sidebar = document.querySelector('.sidebar');
+    const topbar = document.querySelector('.topbar');
+    if(!sidebar || !topbar) return;
+
+    if(!document.querySelector('.sidebar-backdrop')){
+      const backdrop = document.createElement('div');
+      backdrop.className = 'sidebar-backdrop';
+      backdrop.addEventListener('click', () => document.body.classList.remove('sidebar-open'));
+      sidebar.insertAdjacentElement('afterend', backdrop);
+    }
+
+    if(!document.getElementById('mobileNavToggle')){
+      const toggle = document.createElement('button');
+      toggle.id = 'mobileNavToggle';
+      toggle.type = 'button';
+      toggle.className = 'mobile-nav-toggle';
+      toggle.setAttribute('aria-label', 'Open navigation menu');
+      toggle.innerHTML = '☰';
+      toggle.addEventListener('click', () => document.body.classList.toggle('sidebar-open'));
+      topbar.insertBefore(toggle, topbar.firstChild);
+    }
+
+    sidebar.querySelectorAll('.nav-item').forEach(link => {
+      link.addEventListener('click', () => document.body.classList.remove('sidebar-open'));
+    });
+  })();

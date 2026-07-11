@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Menu — RestroAI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/menu.css">
+<script type="module" src="https://unpkg.com/@google/model-viewer@3.4.0/dist/model-viewer.min.js"></script>
+</head>
+<body>
+
+<div id="bg-glow"></div>
+<div class="grain"></div>
+
+<div class="order-page-wrap" id="pageWrap">
+  <div class="order-header"><span class="logo-dot"></span>RestroAI</div>
+
+  <div id="noTableScreen" style="display:none;"></div>
+
+  <div id="menuScreen" style="display:none;">
+    <div class="table-band" id="tableBand">
+      <div>
+        <div class="tb-kicker">You're ordering for</div>
+        <div class="tb-name" id="tableBandName">—</div>
+      </div>
+      <div class="restaurant-pill"><span class="dot"></span>Open — Dine-in</div>
+    </div>
+
+    <div class="cat-tabs" id="catTabs"></div>
+
+    <div id="menuList"></div>
+  </div>
+
+  <div id="confirmScreen" style="display:none;"></div>
+</div>
+
+<div class="cart-bar" id="cartBar" style="display:none;">
+  <div>
+    <div class="cb-label" id="cartCountLabel">0 ITEMS ADDED</div>
+    <div class="cb-amount" id="cartTotal">₹0</div>
+  </div>
+  <button class="btn-place-order" id="placeOrderBtn" onclick="placeCustomerOrder()" disabled>Place Order →</button>
+</div>
+
+<!-- AR PREVIEW MODAL -->
+<div class="modal-overlay" id="arModalOverlay">
+  <div class="modal" style="max-width:420px;padding:20px;">
+    <h3 id="arModalTitle" style="margin-bottom:4px;">Dish</h3>
+    <p style="font-size:12px;color:var(--text-mid);margin-bottom:14px;">Drag to rotate, or tap "See on Table" to place it in AR.</p>
+    <model-viewer
+      id="arViewer"
+      ar
+      ar-modes="webxr scene-viewer quick-look"
+      ar-scale="fixed"
+      ar-placement="floor"
+      camera-controls
+      auto-rotate
+      shadow-intensity="1.1"
+      environment-image="neutral"
+      exposure="1.05"
+      loading="eager"
+      reveal="auto"
+      style="width:100%;height:280px;border-radius:14px;background:#0a0a0a;position:relative;">
+      <button slot="ar-button" class="btn btn-primary btn-sm">📱 See on Table</button>
+    </model-viewer>
+    <div id="arDemoNote" class="empty-note" style="display:none;margin-top:10px;padding:10px;font-size:11px;">This is a placeholder 3D model for demo purposes — add your own scanned dish's .glb file under Menu Management.</div>
+    <div id="arLoadError" class="empty-note" style="display:none;margin-top:10px;padding:10px;font-size:12px;">Couldn't load this 3D model right now — the file link may be broken or unreachable. Try again shortly, or check the model's URL under Menu Management.</div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeArModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  /* ================================================================
+     Shared state with the rest of the RestroAI dashboard.
+     Tables, menu and orders all live under the same localStorage key
+     used by overview.html / orders.html / tables.html / menu.html, so
+     an order placed here shows up live on the Live Orders page.
+     ================================================================ */
+  const STORAGE_KEY = 'restroai_panel_state_v2';
+  const STATUS_LABEL = {new:'New', preparing:'Preparing', ready:'Ready', served:'Served'};
+
+  function defaultState(){
+    return {
+      tables: Array.from({length:12}, (_, i) => ({id:i+1, name:'Table ' + String(i+1).padStart(2,'0'), seats: (i % 3 === 0) ? 4 : 2})),
+      menu: [
+        {id:1, name:'Truffle Pasta', cat:'Mains', price:420, desc:'Handmade tagliatelle, wild mushroom, black truffle oil.', emoji:'🍝', active:true},
+        {id:2, name:'Butter Chicken Bowl', cat:'Mains', price:360, desc:'Slow-simmered tomato gravy, char-grilled chicken, basmati.', emoji:'🍛', active:true},
+        {id:3, name:'Margherita Pizza', cat:'Mains', price:340, desc:'San Marzano tomato, fior di latte, basil, wood-fired crust.', emoji:'🍕', active:true},
+        {id:4, name:'Spiced Paneer Tikka', cat:'Starters', price:280, desc:'Char-grilled cottage cheese, mint chutney, smoked spices.', emoji:'🍢', active:true},
+        {id:5, name:'Crispy Corn Chaat', cat:'Starters', price:210, desc:'Tossed sweet corn, tangy masala, pomegranate.', emoji:'🌽', active:true},
+        {id:6, name:'Molten Chocolate Cake', cat:'Desserts', price:230, desc:'Warm dark chocolate cake, vanilla bean ice cream.', emoji:'🍫', active:true},
+        {id:7, name:'Saffron Kulfi', cat:'Desserts', price:180, desc:'Slow-churned saffron pistachio kulfi.', emoji:'🍮', active:true},
+        {id:8, name:'Iced Tea', cat:'Beverages', price:140, desc:'House-brewed, lightly sweetened, fresh mint.', emoji:'🥤', active:true},
+        {id:9, name:'Masala Chai', cat:'Beverages', price:110, desc:'Slow-boiled with whole spices and fresh ginger.', emoji:'☕', active:true},
+      ],
+      orders: []
+    };
+  }
+
+  function loadState(){
+    try{
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if(!raw) return defaultState();
+      const parsed = JSON.parse(raw);
+      if(!parsed.tables || !parsed.menu) return defaultState();
+      return parsed;
+    } catch(e){
+      return defaultState();
+    }
+  }
+
+  function persist(){
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  }
+
+  let state = loadState();
+
+  /* ---------------- Customer ordering flow for a single table, reached by QR code ---------------- */
+  function getParam(name){
+    return new URLSearchParams(location.search).get(name);
+  }
+
+  const orderTableId = Number(getParam('table'));
+  let orderTable = state.tables.find(t => t.id === orderTableId);
+  let cart = {}; // dishId -> qty
+
+  const CAT_SUFFIX = {Starters:'PROTOCOL', Mains:'ARRAY', Desserts:'MODULE', Beverages:'STREAM'};
+  function catLabel(cat){ return `[ ${cat.toUpperCase()}_${CAT_SUFFIX[cat] || 'FEED'} ]`; }
+  function catSlug(cat){ return cat.toLowerCase().replace(/[^a-z0-9]+/g, '-'); }
+
+  function selectTableManually(id){
+    orderTable = state.tables.find(t => t.id === id);
+    if(!orderTable) return;
+    const url = new URL(location.href);
+    url.searchParams.set('table', id);
+    history.replaceState(null, '', url);
+    renderOrderPage();
+  }
+
+  function showScreen(name){
+    document.getElementById('noTableScreen').style.display = name === 'noTable' ? 'block' : 'none';
+    document.getElementById('menuScreen').style.display = name === 'menu' ? 'block' : 'none';
+    document.getElementById('confirmScreen').style.display = name === 'confirm' ? 'block' : 'none';
+  }
+
+  function renderOrderPage(){
+    if(!orderTable){
+      const tableButtons = state.tables.map(t =>
+        `<button class="btn btn-ghost table-select-btn" onclick="selectTableManually(${t.id})">${t.name} <span style="color:var(--text-low);font-weight:400;">${t.seats} seats</span></button>`
+      ).join('');
+      document.getElementById('noTableScreen').innerHTML =
+        '<div class="empty-note link-note" style="margin:20px 0 24px;">This QR link is missing a valid table ID, or the table no longer exists.</div>' +
+        '<div class="cat-heading" style="margin-top:0;">Select your table to continue</div>' +
+        '<div>' + tableButtons + '</div>';
+      document.getElementById('cartBar').style.display = 'none';
+      showScreen('noTable');
+      return;
+    }
+
+    document.getElementById('tableBandName').textContent = orderTable.name;
+
+    const grid = document.getElementById('menuList');
+    const active = state.menu.filter(d => d.active);
+    showScreen('menu');
+    if(active.length === 0){
+      document.getElementById('catTabs').innerHTML = '';
+      grid.innerHTML = '<div class="empty-note">The menu is being updated right now — please check back shortly, or ask a staff member.</div>';
+      document.getElementById('cartBar').style.display = 'none';
+      return;
+    }
+
+    const cats = [...new Set(active.map(d => d.cat))];
+
+    // Category tabs
+    document.getElementById('catTabs').innerHTML = cats.map((cat, i) => `
+      <button class="cat-tab ${i === 0 ? 'active' : ''}" data-cat="${catSlug(cat)}" onclick="scrollToCat('${catSlug(cat)}')">${cat}</button>
+    `).join('');
+
+    // Dish sections
+    grid.innerHTML = cats.map(cat => `
+      <div class="cat-block" id="cat-${catSlug(cat)}">
+        <div class="cat-heading">${catLabel(cat)}</div>
+        <div class="menu-dish-grid">
+          ${active.filter(d => d.cat === cat).map(d => `
+            <div class="menu-dish-card">
+              <div class="mdc-emoji">${d.emoji || '🍽'}</div>
+              <div class="mdc-body">
+                <div class="mdc-row"><h4>${d.name}</h4><span class="mdc-price">₹${d.price}</span></div>
+                ${d.desc ? `<p class="mdc-desc">${d.desc}</p>` : ''}
+                <button class="ar-badge-btn" onclick="viewInAR(${d.id})">📱 View in AR</button>
+              </div>
+              <div class="mdc-qty" id="qtyctrl-${d.id}">${renderQtyControl(d.id)}</div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `).join('');
+
+    document.getElementById('cartBar').style.display = 'flex';
+    updateCartTotal();
+    setupScrollSpy();
+  }
+
+  function scrollToCat(slug){
+    const el = document.getElementById('cat-' + slug);
+    if(el) el.scrollIntoView({behavior:'smooth', block:'start'});
+  }
+
+  let scrollSpyObserver = null;
+  function setupScrollSpy(){
+    if(scrollSpyObserver) scrollSpyObserver.disconnect();
+    const sections = document.querySelectorAll('.cat-block');
+    scrollSpyObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if(entry.isIntersecting){
+          const slug = entry.target.id.replace('cat-', '');
+          document.querySelectorAll('.cat-tab').forEach(t => t.classList.toggle('active', t.dataset.cat === slug));
+        }
+      });
+    }, {rootMargin:'-40% 0px -50% 0px', threshold:0});
+    sections.forEach(s => scrollSpyObserver.observe(s));
+  }
+
+  /* ---------------- AR PREVIEW ---------------- */
+  // modelviewer.dev's own shared assets — used across their official docs
+  // and demos, so this is about as stable/long-lived a public URL as exists.
+  const DEMO_GLB = 'https://modelviewer.dev/shared-assets/models/Astronaut.glb';
+  function viewInAR(id){
+    const dish = state.menu.find(d => d.id === id);
+    if(!dish) return;
+    const usingFallback = !dish.glb;
+    const glbUrl = dish.glb || DEMO_GLB;
+    document.getElementById('arModalTitle').textContent = dish.name;
+    const viewer = document.getElementById('arViewer');
+    document.getElementById('arLoadError').style.display = 'none';
+    viewer.style.display = 'block';
+    viewer.setAttribute('src', glbUrl);
+    if(dish.usdz){ viewer.setAttribute('ios-src', dish.usdz); } else { viewer.removeAttribute('ios-src'); }
+    document.getElementById('arDemoNote').style.display = usingFallback ? 'block' : 'none';
+    document.getElementById('arModalOverlay').classList.add('open');
+
+    // Jump straight into AR the moment the model is ready, so tapping
+    // "View in AR" launches AR directly on supported phones instead of
+    // requiring a second tap on the in-modal button. On desktop / devices
+    // without AR support this silently does nothing and the customer is
+    // simply left with the rotate-to-preview modal as a fallback.
+    viewer.addEventListener('load', function tryAR(){
+      viewer.removeEventListener('load', tryAR);
+      try{ viewer.activateAR(); }catch(e){ /* AR unsupported on this device — rotate preview still works */ }
+    }, {once:true});
+  }
+
+  // The 2D preview modal sits underneath the AR view. Without this, it
+  // stays marked "open" forever once AR launches — a full-screen overlay
+  // silently blocking every tap afterward (including "Back to Menu").
+  // Close it once the customer exits AR and lands back on the page.
+  // (Guarded so the *initial* default "not-presenting" status — which
+  // fires before any AR attempt — doesn't instantly close the modal and
+  // break the desktop rotate-preview fallback.)
+  let arSessionStarted = false;
+  document.getElementById('arViewer').addEventListener('ar-status', (event) => {
+    if(event.detail.status === 'session-started'){
+      arSessionStarted = true;
+    } else if(event.detail.status === 'not-presenting' && arSessionStarted){
+      arSessionStarted = false;
+      closeArModal();
+    }
+  });
+
+  document.getElementById('arViewer').addEventListener('error', () => {
+    document.getElementById('arViewer').style.display = 'none';
+    document.getElementById('arDemoNote').style.display = 'none';
+    document.getElementById('arLoadError').style.display = 'block';
+  });
+  function closeArModal(){
+    document.getElementById('arModalOverlay').classList.remove('open');
+    const viewer = document.getElementById('arViewer');
+    if(viewer){ viewer.removeAttribute('src'); viewer.style.display = 'block'; }
+    document.getElementById('arLoadError').style.display = 'none';
+  }
+  document.getElementById('arModalOverlay').addEventListener('click', e => { if(e.target.id === 'arModalOverlay') closeArModal(); });
+
+  /* ---------------- CART ---------------- */
+  function renderQtyControl(id){
+    const qty = cart[id] || 0;
+    if(qty === 0){
+      return `<button class="qty-add-btn" onclick="changeCartQty(${id}, 1)">+</button>`;
+    }
+    return `
+      <div class="qty-stepper-mini">
+        <button onclick="changeCartQty(${id}, -1)">−</button>
+        <span class="qty-val">${qty}</span>
+        <button onclick="changeCartQty(${id}, 1)">+</button>
+      </div>
+    `;
+  }
+
+  function changeCartQty(id, delta){
+    const next = Math.max(0, (cart[id] || 0) + delta);
+    cart[id] = next;
+    const el = document.getElementById('qtyctrl-' + id);
+    if(el) el.innerHTML = renderQtyControl(id);
+    updateCartTotal();
+  }
+
+  function updateCartTotal(){
+    let total = 0, count = 0;
+    Object.keys(cart).forEach(id => {
+      const dish = state.menu.find(d => d.id === Number(id));
+      if(dish && cart[id] > 0){ total += dish.price * cart[id]; count += cart[id]; }
+    });
+    document.getElementById('cartTotal').textContent = '₹' + total.toLocaleString('en-IN');
+    document.getElementById('cartCountLabel').textContent = count + (count === 1 ? ' ITEM ADDED' : ' ITEMS ADDED');
+    document.getElementById('placeOrderBtn').disabled = count === 0;
+  }
+
+  function placeCustomerOrder(){
+    const chosen = Object.keys(cart).filter(id => cart[id] > 0);
+    if(chosen.length === 0) return;
+    const itemsStr = chosen.map(id => {
+      const dish = state.menu.find(d => d.id === Number(id));
+      const qty = cart[id];
+      return qty > 1 ? `${dish.name} ×${qty}` : dish.name;
+    }).join(', ');
+    let total = 0;
+    chosen.forEach(id => {
+      const dish = state.menu.find(d => d.id === Number(id));
+      total += dish.price * cart[id];
+    });
+    const nextId = Math.max(0, ...state.orders.map(o => o.id)) + 1;
+    const newOrder = {id: nextId, tableId: orderTable.id, items: itemsStr, amount: total, status: 'new', ts: Date.now()};
+    state.orders.push(newOrder);
+    persist();
+    showConfirmation(newOrder);
+  }
+
+  function showConfirmation(order){
+    document.getElementById('confirmScreen').innerHTML = `
+      <div class="order-confirm">
+        <div class="oc-tick">✅</div>
+        <h2>Order placed!</h2>
+        <div class="oc-meta">Table ${orderTable.name} · ₹${order.amount.toLocaleString('en-IN')} · Order #${order.id}</div>
+        <span class="status-pill status-new" id="liveStatusPill" style="font-size:12px;padding:8px 18px;">New</span>
+        <div class="oc-note">The kitchen has been notified. This page updates automatically as your order moves along.</div>
+        <button class="btn btn-ghost" onclick="backToMenu()" style="margin-top:22px;">← Back to Menu</button>
+      </div>
+    `;
+    document.getElementById('cartBar').style.display = 'none';
+    showScreen('confirm');
+    pollOrderStatus(order.id);
+  }
+
+  function backToMenu(){
+    cart = {};
+    closeArModal(); // safety net — never leave a stuck-open modal blocking the menu
+    if(statusPollTimer) clearInterval(statusPollTimer);
+    renderOrderPage(); // menuScreen was never destroyed, just re-populates + shows it
+  }
+
+  let statusPollTimer = null;
+  function pollOrderStatus(orderId){
+    if(statusPollTimer) clearInterval(statusPollTimer);
+    statusPollTimer = setInterval(() => {
+      state = loadState(); // re-read localStorage in case staff updated the status
+      const o = state.orders.find(x => x.id === orderId);
+      const pill = document.getElementById('liveStatusPill');
+      if(!pill){ clearInterval(statusPollTimer); return; } // left the confirmation screen
+      if(!o) return;
+      pill.textContent = STATUS_LABEL[o.status];
+      pill.className = 'status-pill status-' + o.status;
+    }, 3000);
+  }
+
+  renderOrderPage();
+</script>
+
+</body>
+</html>
