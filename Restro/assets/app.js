@@ -5,8 +5,18 @@ const STORAGE_KEY = 'restroai_panel_state_v2';
     return seats.map((s,i) => ({id:i+1, name:'T-' + String(i+1).padStart(2,'0'), seats:s}));
   }
 
+  function seedCategories(){
+    return [
+      {id:1, name:'Starters', emoji:'🥗'},
+      {id:2, name:'Mains', emoji:'🍛'},
+      {id:3, name:'Desserts', emoji:'🍰'},
+      {id:4, name:'Beverages', emoji:'🍹'}
+    ];
+  }
+
   const defaultState = {
     tables: seedTables(),
+    categories: seedCategories(),
     orders: [
       {id:1, tableId:4, items:'Margherita, Iced Tea', amount:460, status:'new', ts:Date.now()-2*60000},
       {id:2, tableId:11, items:'Butter Chicken Bowl', amount:320, status:'kitchen', ts:Date.now()-6*60000},
@@ -30,6 +40,7 @@ const STORAGE_KEY = 'restroai_panel_state_v2';
   let state = loadState();
   let orderTab = 'active';
   let editingMenuId = null;
+  let editingCategoryId = null;
   let orderDraft = {}; // dishId -> qty, for the order modal in progress
 
   function loadState(){
@@ -37,7 +48,12 @@ const STORAGE_KEY = 'restroai_panel_state_v2';
       const raw = localStorage.getItem(STORAGE_KEY);
       if(raw){
         const parsed = JSON.parse(raw);
-        if(parsed.tables && parsed.orders && parsed.menu) return parsed;
+        if(parsed.tables && parsed.orders && parsed.menu){
+          if(!parsed.categories || !parsed.categories.length){
+            parsed.categories = seedCategories();
+          }
+          return parsed;
+        }
       }
     }catch(e){ console.warn('Could not load saved state', e); }
     return JSON.parse(JSON.stringify(defaultState));
@@ -204,6 +220,111 @@ const STORAGE_KEY = 'restroai_panel_state_v2';
     renderTables();
   }
 
+  /* ---------------- CATEGORIES ---------------- */
+  function dishCountForCategory(name){
+    return state.menu.filter(d => d.cat === name).length;
+  }
+
+  function populateCategorySelect(selectEl, selected){
+    if(!selectEl) return;
+    const cats = state.categories || [];
+    if(cats.length === 0){
+      selectEl.innerHTML = '<option value="">No categories — add one first</option>';
+      return;
+    }
+    selectEl.innerHTML = cats.map(c =>
+      `<option value="${c.name.replace(/"/g, '&quot;')}">${c.emoji ? c.emoji + ' ' : ''}${c.name}</option>`
+    ).join('');
+    if(selected && cats.some(c => c.name === selected)) selectEl.value = selected;
+  }
+
+  function renderCategories(){
+    const grid = document.getElementById('categoryGrid');
+    if(!grid) return;
+    const cats = state.categories || [];
+    if(cats.length === 0){
+      grid.innerHTML = '<div class="empty-note">No categories yet — add one to organize your menu.</div>';
+    } else {
+      grid.innerHTML = cats.map(c => {
+        const count = dishCountForCategory(c.name);
+        return `
+          <div class="category-card">
+            <div class="category-top">
+              <div class="category-emoji">${c.emoji || '📁'}</div>
+              <div class="dish-actions">
+                <button type="button" class="a" onclick="openCategoryModal(${c.id})" title="Edit">✎</button>
+                <button type="button" class="a" onclick="deleteCategory(${c.id})" title="Delete">✕</button>
+              </div>
+            </div>
+            <h4>${c.name}</h4>
+            <span class="category-meta">${count} dish${count === 1 ? '' : 'es'}</span>
+          </div>
+        `;
+      }).join('');
+    }
+    grid.innerHTML += `<button type="button" class="category-card add-category-card" onclick="openCategoryModal()"><span class="plus">+</span>Add category</button>`;
+    const countEl = document.getElementById('categoryCount');
+    if(countEl) countEl.textContent = `${cats.length} categor${cats.length === 1 ? 'y' : 'ies'}`;
+  }
+
+  function openCategoryModal(id){
+    editingCategoryId = id || null;
+    const title = document.getElementById('categoryModalTitle');
+    const saveBtn = document.getElementById('categorySaveBtn');
+    if(id){
+      const cat = state.categories.find(c => c.id === id);
+      title.textContent = 'Edit Category';
+      saveBtn.textContent = 'Save Changes';
+      document.getElementById('catEmoji').value = cat.emoji || '';
+      document.getElementById('catName').value = cat.name;
+    } else {
+      title.textContent = 'Add Category';
+      saveBtn.textContent = 'Add Category';
+      document.getElementById('catEmoji').value = '📁';
+      document.getElementById('catName').value = '';
+    }
+    document.getElementById('categoryModalOverlay').classList.add('open');
+  }
+  function closeCategoryModal(){
+    document.getElementById('categoryModalOverlay').classList.remove('open');
+  }
+  function saveCategory(){
+    const name = document.getElementById('catName').value.trim();
+    const emoji = document.getElementById('catEmoji').value.trim() || '📁';
+    if(!name){ alert('Please enter a category name.'); return; }
+    const duplicate = state.categories.find(c => c.name.toLowerCase() === name.toLowerCase() && c.id !== editingCategoryId);
+    if(duplicate){ alert('A category with this name already exists.'); return; }
+    if(editingCategoryId){
+      const cat = state.categories.find(c => c.id === editingCategoryId);
+      const oldName = cat.name;
+      cat.name = name;
+      cat.emoji = emoji;
+      if(oldName !== name){
+        state.menu.forEach(d => { if(d.cat === oldName) d.cat = name; });
+      }
+    } else {
+      const nextId = Math.max(0, ...state.categories.map(c => c.id)) + 1;
+      state.categories.push({id: nextId, name, emoji});
+    }
+    persist();
+    closeCategoryModal();
+    renderCategories();
+    renderMenu();
+  }
+  function deleteCategory(id){
+    const cat = state.categories.find(c => c.id === id);
+    if(!cat) return;
+    const count = dishCountForCategory(cat.name);
+    if(count > 0){
+      alert(`Cannot delete "${cat.name}" — ${count} menu item${count === 1 ? '' : 's'} still use it. Reassign or remove those dishes first.`);
+      return;
+    }
+    if(!confirm(`Remove category "${cat.name}"?`)) return;
+    state.categories = state.categories.filter(c => c.id !== id);
+    persist();
+    renderCategories();
+  }
+
   /* ---------------- MENU ---------------- */
   function renderMenu(){
     const grid = document.getElementById('menuGrid');
@@ -250,13 +371,14 @@ const STORAGE_KEY = 'restroai_panel_state_v2';
     editingMenuId = id || null;
     const modalTitle = document.getElementById('menuModalTitle');
     const saveBtn = document.getElementById('menuSaveBtn');
+    const catSelect = document.getElementById('dishCat');
     if(id){
       const dish = state.menu.find(d=>d.id===id);
       modalTitle.textContent = 'Edit Menu Item';
       saveBtn.textContent = 'Save Changes';
       document.getElementById('dishEmoji').value = dish.emoji || '';
       document.getElementById('dishName').value = dish.name;
-      document.getElementById('dishCat').value = dish.cat;
+      populateCategorySelect(catSelect, dish.cat);
       document.getElementById('dishPrice').value = dish.price;
       document.getElementById('dishDesc').value = dish.desc || '';
       document.getElementById('dishGlb').value = dish.glb || '';
@@ -266,11 +388,16 @@ const STORAGE_KEY = 'restroai_panel_state_v2';
       saveBtn.textContent = 'Add Item';
       document.getElementById('dishEmoji').value = '🍽';
       document.getElementById('dishName').value = '';
-      document.getElementById('dishCat').value = 'Mains';
+      populateCategorySelect(catSelect);
       document.getElementById('dishPrice').value = '';
       document.getElementById('dishDesc').value = '';
       document.getElementById('dishGlb').value = '';
       document.getElementById('dishActive').checked = true;
+    }
+    if(!state.categories || state.categories.length === 0){
+      saveBtn.disabled = true;
+    } else {
+      saveBtn.disabled = false;
     }
     document.getElementById('menuModalOverlay').classList.add('open');
   }
@@ -278,7 +405,9 @@ const STORAGE_KEY = 'restroai_panel_state_v2';
   function saveMenuItem(){
     const name = document.getElementById('dishName').value.trim();
     const price = Number(document.getElementById('dishPrice').value) || 0;
+    const cat = document.getElementById('dishCat').value;
     if(!name || !price){ alert('Please add at least a name and price.'); return; }
+    if(!cat){ alert('Please add a category first under Categories.'); return; }
     const glbUrl = document.getElementById('dishGlb').value.trim();
     const payload = {
       emoji: document.getElementById('dishEmoji').value.trim() || '🍽',
@@ -446,6 +575,9 @@ const STORAGE_KEY = 'restroai_panel_state_v2';
   const qrModalOverlay = document.getElementById('qrModalOverlay');
   if(qrModalOverlay) qrModalOverlay.addEventListener('click', e => { if(e.target.id==='qrModalOverlay') closeQrModal(); });
 
+  const categoryModalOverlay = document.getElementById('categoryModalOverlay');
+  if(categoryModalOverlay) categoryModalOverlay.addEventListener('click', e => { if(e.target.id==='categoryModalOverlay') closeCategoryModal(); });
+
   // Highlight whichever sidebar link matches the current page, so the
   // active state is always correct without hand-editing every file.
   (function markActiveNavLink(){
@@ -459,6 +591,7 @@ const STORAGE_KEY = 'restroai_panel_state_v2';
   renderOrders();
   renderMenu();
   renderTables();
+  renderCategories();
 
   (function initMobileNav(){
     const sidebar = document.querySelector('.sidebar');

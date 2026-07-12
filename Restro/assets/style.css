@@ -200,6 +200,19 @@ h1,h2,h3,h4{font-family:var(--font-display);letter-spacing:-0.02em;font-weight:6
 .add-table-card:hover{border-color:rgba(255,90,31,0.4);color:var(--text-hi);}
 .add-table-card .plus{font-size:24px;color:var(--ember);}
 
+/* ---------- category cards ---------- */
+.category-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:40px;}
+@media(max-width:1200px){.category-grid{grid-template-columns:repeat(3,1fr);}}
+@media(max-width:860px){.category-grid{grid-template-columns:repeat(2,1fr);}}
+.category-card{background:var(--glass);border:1px solid var(--line);border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:10px;min-height:130px;}
+.category-top{display:flex;justify-content:space-between;align-items:flex-start;}
+.category-emoji{width:42px;height:42px;border-radius:11px;background:var(--grad-ai);display:flex;align-items:center;justify-content:center;font-size:19px;box-shadow:0 0 20px -6px rgba(255,90,31,0.6);}
+.category-card h4{font-size:14.5px;}
+.category-meta{font-family:var(--font-mono);font-size:11px;color:var(--text-low);}
+.add-category-card{border:1px dashed var(--line);background:none;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;color:var(--text-low);font-size:13px;cursor:pointer;font-family:inherit;}
+.add-category-card:hover{border-color:rgba(255,90,31,0.4);color:var(--text-hi);}
+.add-category-card .plus{font-size:24px;color:var(--ember);}
+
 /* ---------- modal ---------- */
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);z-index:200;display:none;align-items:center;justify-content:center;padding:20px;}
 .modal-overlay.open{display:flex;}

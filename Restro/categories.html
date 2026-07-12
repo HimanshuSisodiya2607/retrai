@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Settings — RestroAI</title>
+<title>Categories — RestroAI</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -47,7 +47,7 @@
 
   <div class="main">
     <div class="topbar">
-      <div><h1>Settings</h1><div class="sub">Restaurant profile and preferences</div></div>
+      <div><h1>Categories</h1><div class="sub">Organize dishes into menu sections</div></div>
       <div class="topbar-right">
         <div class="search-box">🔍 Search orders, dishes…</div>
         <div class="icon-btn">🔔<span class="dot"></span></div>
@@ -57,37 +57,28 @@
 
     <div class="content">
 
-      <div class="panel" style="padding:24px 26px;max-width:720px;">
-        <div class="settings-section">
-          <h3>Restaurant Profile</h3>
-          <div class="field-row">
-            <div class="field"><label>Restaurant Name</label><input type="text" value="Spice Bazaar"></div>
-            <div class="field"><label>Cuisine Type</label><input type="text" value="Multi-cuisine"></div>
-          </div>
-          <div class="field"><label>Address</label><input type="text" value="Sardarpura, Jodhpur, Rajasthan"></div>
-          <div class="field-row">
-            <div class="field"><label>Opening Time</label><input type="text" value="12:00 PM"></div>
-            <div class="field"><label>Closing Time</label><input type="text" value="11:30 PM"></div>
-          </div>
-        </div>
-
-        <div class="settings-section">
-          <h3>Notifications</h3>
-          <div class="toggle-row"><div><div class="t-label">New order alerts</div><div class="t-sub">Ping when a new order comes in</div></div><button class="toggle on" onclick="this.classList.toggle('on')"></button></div>
-          <div class="toggle-row"><div><div class="t-label">Low inventory alerts</div><div class="t-sub">Notify when stock drops below reorder level</div></div><button class="toggle on" onclick="this.classList.toggle('on')"></button></div>
-          <div class="toggle-row"><div><div class="t-label">Weekly AI insight digest</div><div class="t-sub">Email summary every Monday</div></div><button class="toggle" onclick="this.classList.toggle('on')"></button></div>
-        </div>
-
-        <div class="settings-section" style="border-bottom:none;margin-bottom:0;">
-          <h3>Danger Zone</h3>
-          <div class="toggle-row"><div><div class="t-label">Reset demo data</div><div class="t-sub">Clears orders, tables and menu back to defaults</div></div><button class="btn btn-ghost btn-sm" onclick="if(confirm('Reset all demo data?')){localStorage.removeItem('restroai_panel_state_v2'); location.reload();}">Reset</button></div>
-        </div>
-
-        <div class="modal-actions" style="justify-content:flex-start;margin-top:24px;">
-          <button class="btn btn-primary" onclick="alert('Settings saved (demo).')">Save Changes</button>
-        </div>
+      <div class="panel-head">
+        <h2>Menu Categories</h2>
+        <div class="link" id="categoryCount">0 categories</div>
       </div>
+      <p style="font-size:13px;color:var(--text-mid);margin:-8px 0 20px;">Categories appear in the menu item form and on the customer ordering page.</p>
+      <div class="category-grid" id="categoryGrid"></div>
 
+    </div>
+  </div>
+</div>
+
+<!-- CATEGORY MODAL -->
+<div class="modal-overlay" id="categoryModalOverlay">
+  <div class="modal">
+    <h3 id="categoryModalTitle">Add Category</h3>
+    <div class="field-row">
+      <div class="field"><label>Emoji</label><input type="text" id="catEmoji" maxlength="2" placeholder="📁"></div>
+      <div class="field" style="flex:2;"><label>Name</label><input type="text" id="catName" placeholder="e.g. Starters"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeCategoryModal()">Cancel</button>
+      <button class="btn btn-primary" id="categorySaveBtn" onclick="saveCategory()">Add Category</button>
     </div>
   </div>
 </div>
