@@ -1,3 +1,84 @@
+<?php
+session_start();
+require_once __DIR__ . '/database/db.php';
+
+$error = '';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['register'])) {
+    $restaurant_name = trim($_POST['restaurant_name'] ?? '');
+    $owner_name = trim($_POST['owner_name'] ?? '');
+    $email = trim($_POST['email'] ?? '');
+    $password = $_POST['password'] ?? '';
+    $confirm_password = $_POST['confirm_password'] ?? '';
+    $phone = trim($_POST['phone'] ?? '');
+    $cuisine = trim($_POST['cuisine'] ?? '');
+    $city = trim($_POST['city'] ?? '');
+    $table_count = max(0, (int) ($_POST['tables'] ?? 0));
+    $plan_name = trim($_POST['plan_name'] ?? 'Growth');
+    $billing_cycle = ($_POST['billing_cycle'] ?? 'monthly') === 'annual' ? 'annual' : 'monthly';
+
+    if ($restaurant_name === '' || $owner_name === '' || $email === '') {
+        $error = 'Please fill in restaurant name, owner name, and email.';
+    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $error = 'Please enter a valid email address.';
+    } elseif (strlen($password) < 6) {
+        $error = 'Password must be at least 6 characters.';
+    } elseif ($password !== $confirm_password) {
+        $error = 'Passwords do not match.';
+    } else {
+        $chk = mysqli_prepare($conn, "SELECT id FROM restaurants WHERE email = ?");
+        mysqli_stmt_bind_param($chk, 's', $email);
+        mysqli_stmt_execute($chk);
+        $exists = mysqli_fetch_assoc(mysqli_stmt_get_result($chk));
+        mysqli_stmt_close($chk);
+
+        if ($exists) {
+            $error = 'An account with this email already exists. Please sign in instead.';
+        } else {
+            $restro_key = 'rst_' . bin2hex(random_bytes(6));
+            $phone_db = $phone !== '' ? $phone : null;
+            $cuisine_db = $cuisine !== '' ? $cuisine : null;
+            $city_db = $city !== '' ? $city : null;
+
+            $ins = mysqli_prepare($conn, "
+                INSERT INTO restaurants (
+                    restro_key, restaurant_name, owner_name, email, password,
+                    phone, cuisine, city, plan_name, billing_cycle
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ");
+            mysqli_stmt_bind_param(
+                $ins, 'ssssssssss',
+                $restro_key, $restaurant_name, $owner_name, $email, $password,
+                $phone_db, $cuisine_db, $city_db, $plan_name, $billing_cycle
+            );
+            mysqli_stmt_execute($ins);
+            mysqli_stmt_close($ins);
+
+            if ($table_count > 0) {
+                $tbl_ins = mysqli_prepare($conn, "
+                    INSERT INTO restaurant_tables (table_key, restro_key, table_name, seats)
+                    VALUES (?, ?, ?, 4)
+                ");
+                for ($i = 1; $i <= $table_count; $i++) {
+                    $table_key = 'tbl_' . bin2hex(random_bytes(6));
+                    $table_name = 'T-' . str_pad((string) $i, 2, '0', STR_PAD_LEFT);
+                    mysqli_stmt_bind_param($tbl_ins, 'sss', $table_key, $restro_key, $table_name);
+                    mysqli_stmt_execute($tbl_ins);
+                }
+                mysqli_stmt_close($tbl_ins);
+            }
+
+            $_SESSION['restro_key'] = $restro_key;
+            $_SESSION['restaurant_name'] = $restaurant_name;
+            $_SESSION['owner_name'] = $owner_name;
+            header('Location: Restro/overview.php');
+            exit;
+        }
+    }
+}
+
+$post = $_SERVER['REQUEST_METHOD'] === 'POST' ? $_POST : [];
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -114,6 +195,14 @@
   }
   .field input::placeholder{color:var(--text-low);}
   .field input:focus, .field select:focus{outline:none;border-color:var(--ember);background:rgba(255,90,31,0.05);}
+  .password-wrap{position:relative;}
+  .password-wrap input{padding-right:42px;}
+  .pw-toggle{
+    position:absolute;right:10px;top:50%;transform:translateY(-50%);
+    width:30px;height:30px;border-radius:8px;border:none;background:none;
+    color:var(--text-low);font-size:14px;cursor:pointer;
+  }
+  .pw-toggle:hover{color:var(--text-mid);}
   .field select{appearance:none;background-image:linear-gradient(45deg, transparent 50%, var(--text-mid) 50%), linear-gradient(135deg, var(--text-mid) 50%, transparent 50%);background-position:calc(100% - 18px) center, calc(100% - 13px) center;background-size:5px 5px, 5px 5px;background-repeat:no-repeat;}
 
   .plan-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:10px;}
@@ -249,7 +338,7 @@
   <div class="wrap">
     <nav>
       <div class="logo"><span class="logo-dot"></span>RestroAI</div>
-      <a href="restroai-landing.html" class="back-link">← Back to home</a>
+      <a href="index.html" class="back-link">← Back to home</a>
     </nav>
   </div>
 </header>
@@ -277,7 +366,10 @@
 
       <div class="panel" style="margin-top:30px;">
 
-        <form id="onboardForm">
+        <form id="onboardForm" method="post" action="onboarding.php">
+          <input type="hidden" name="register" id="registerField" value="0">
+          <input type="hidden" name="plan_name" id="planNameField" value="<?php echo htmlspecialchars($post['plan_name'] ?? 'Growth'); ?>">
+          <input type="hidden" name="billing_cycle" id="billingCycleField" value="<?php echo htmlspecialchars($post['billing_cycle'] ?? 'monthly'); ?>">
           <!-- STEP 1 -->
           <div class="step-panel active" data-panel="0">
             <h2>Tell us about your restaurant</h2>
@@ -285,29 +377,29 @@
 
             <div class="field">
               <label>Restaurant name</label>
-              <input type="text" id="restName" placeholder="e.g. Spice Route Kitchen" required>
+              <input type="text" id="restName" name="restaurant_name" placeholder="e.g. Spice Route Kitchen" required value="<?php echo htmlspecialchars($post['restaurant_name'] ?? ''); ?>">
             </div>
             <div class="field-row">
               <div class="field">
                 <label>Cuisine type</label>
-                <select id="cuisine">
-                  <option>Multi-cuisine</option>
-                  <option>North Indian</option>
-                  <option>South Indian</option>
-                  <option>Italian</option>
-                  <option>Cafe & Bakery</option>
-                  <option>Fine Dining</option>
-                  <option>Other</option>
+                <select id="cuisine" name="cuisine">
+                  <?php
+                  $cuisines = ['Multi-cuisine', 'North Indian', 'South Indian', 'Italian', 'Cafe & Bakery', 'Fine Dining', 'Other'];
+                  $sel_cuisine = $post['cuisine'] ?? 'Multi-cuisine';
+                  foreach ($cuisines as $c):
+                  ?>
+                  <option<?php echo $sel_cuisine === $c ? ' selected' : ''; ?>><?php echo htmlspecialchars($c); ?></option>
+                  <?php endforeach; ?>
                 </select>
               </div>
               <div class="field">
                 <label>City</label>
-                <input type="text" id="city" placeholder="e.g. Jodhpur">
+                <input type="text" id="city" name="city" placeholder="e.g. Jodhpur" value="<?php echo htmlspecialchars($post['city'] ?? ''); ?>">
               </div>
             </div>
             <div class="field">
               <label>Number of tables</label>
-              <input type="number" id="tables" placeholder="e.g. 18" min="1">
+              <input type="number" id="tables" name="tables" placeholder="e.g. 18" min="0" value="<?php echo htmlspecialchars($post['tables'] ?? ''); ?>">
             </div>
           </div>
 
@@ -318,16 +410,32 @@
 
             <div class="field">
               <label>Full name</label>
-              <input type="text" id="ownerName" placeholder="e.g. Aarav Sharma" required>
+              <input type="text" id="ownerName" name="owner_name" placeholder="e.g. Aarav Sharma" required value="<?php echo htmlspecialchars($post['owner_name'] ?? ''); ?>">
             </div>
             <div class="field-row">
               <div class="field">
                 <label>Work email</label>
-                <input type="email" id="email" placeholder="you@restaurant.com" required>
+                <input type="email" id="email" name="email" placeholder="you@restaurant.com" required value="<?php echo htmlspecialchars($post['email'] ?? ''); ?>">
               </div>
               <div class="field">
                 <label>Phone number</label>
-                <input type="tel" id="phone" placeholder="+91 98xxxxxxx0">
+                <input type="tel" id="phone" name="phone" placeholder="+91 98xxxxxxx0" value="<?php echo htmlspecialchars($post['phone'] ?? ''); ?>">
+              </div>
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <label>Password</label>
+                <div class="password-wrap">
+                  <input type="password" id="password" name="password" placeholder="Create a password" minlength="6" autocomplete="new-password" required>
+                  <button type="button" class="pw-toggle" data-target="password" aria-label="Show password">👁</button>
+                </div>
+              </div>
+              <div class="field">
+                <label>Confirm password</label>
+                <div class="password-wrap">
+                  <input type="password" id="confirmPassword" name="confirm_password" placeholder="Re-enter password" minlength="6" autocomplete="new-password" required>
+                  <button type="button" class="pw-toggle" data-target="confirmPassword" aria-label="Show password">👁</button>
+                </div>
               </div>
             </div>
           </div>
@@ -430,6 +538,7 @@
               <div class="review-row"><span class="k">Tables</span><span class="v" id="rvTables">—</span></div>
               <div class="review-row"><span class="k">Owner</span><span class="v" id="rvOwner">—</span></div>
               <div class="review-row"><span class="k">Email</span><span class="v" id="rvEmail">—</span></div>
+              <div class="review-row"><span class="k">Password</span><span class="v" id="rvPassword">—</span></div>
               <div class="review-row"><span class="k">Plan</span><span class="v" id="rvPlan">—</span></div>
               <div class="review-row"><span class="k">Billing</span><span class="v" id="rvBilling">—</span></div>
               <div class="review-row"><span class="k">Card</span><span class="v" id="rvCard">—</span></div>
@@ -448,7 +557,7 @@
           <div class="success-ring">✓</div>
           <h2>Welcome to RestroAI</h2>
           <p>Payment confirmed and your restaurant OS is being provisioned. We're sending your receipt, setup instructions, and QR kit details to <span id="successEmail" style="color:var(--text-hi);">your email</span>.</p>
-          <a href="restroai-landing.html" class="btn btn-primary">Back to home</a>
+          <a href="Restro/overview.php" class="btn btn-primary">Go to dashboard</a>
         </div>
 
       </div>
@@ -510,8 +619,8 @@
   const form = document.getElementById('onboardForm');
   const successView = document.getElementById('successView');
 
-  let selectedPlan = 'Growth';
-  let billingCycle = 'monthly';
+  let selectedPlan = <?php echo json_encode($post['plan_name'] ?? 'Growth'); ?>;
+  let billingCycle = <?php echo json_encode($post['billing_cycle'] ?? 'monthly'); ?>;
 
   const planPricing = {
     Starter: 2999,
@@ -527,6 +636,8 @@
     ownerName: document.getElementById('ownerName'),
     email: document.getElementById('email'),
     phone: document.getElementById('phone'),
+    password: document.getElementById('password'),
+    confirmPassword: document.getElementById('confirmPassword'),
     cardName: document.getElementById('cardName'),
     cardNumber: document.getElementById('cardNumber'),
     cardExpiry: document.getElementById('cardExpiry'),
@@ -585,6 +696,7 @@
     document.getElementById('rvTables').textContent = els.tables.value || '—';
     document.getElementById('rvOwner').textContent = els.ownerName.value || '—';
     document.getElementById('rvEmail').textContent = els.email.value || '—';
+    document.getElementById('rvPassword').textContent = els.password.value ? '••••••••' : '—';
     document.getElementById('rvPlan').textContent = selectedPlan;
     document.getElementById('rvBilling').textContent = billingCycle === 'monthly' ? 'Monthly' : 'Annual (20% off)';
 
@@ -607,6 +719,17 @@
     if(step === 1){
       if(!els.ownerName.value.trim()){ els.ownerName.focus(); return false; }
       if(!els.email.value.trim() || !els.email.value.includes('@')){ els.email.focus(); return false; }
+      if(!els.password.value.trim()){ els.password.focus(); return false; }
+      if(els.password.value.length < 6){
+        alert('Password must be at least 6 characters.');
+        els.password.focus();
+        return false;
+      }
+      if(els.password.value !== els.confirmPassword.value){
+        alert('Passwords do not match.');
+        els.confirmPassword.focus();
+        return false;
+      }
     }
     if(step === 3 && selectedPlan !== 'Enterprise'){
       const numDigits = els.cardNumber.value.replace(/\s/g,'');
@@ -635,6 +758,15 @@
     els.cardCvv.value = els.cardCvv.value.replace(/\D/g,'').slice(0,4);
   });
 
+  document.querySelectorAll('.pw-toggle').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const input = document.getElementById(btn.dataset.target);
+      const show = input.type === 'password';
+      input.type = show ? 'text' : 'password';
+      btn.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+    });
+  });
+
   // billing cycle toggle
   document.querySelectorAll('.cycle-btn').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -651,12 +783,10 @@
       step++;
       renderStepUI();
     } else {
-      // submit
-      form.style.display = 'none';
-      document.querySelector('.stepper').style.display = 'none';
-      document.querySelector('.step-labels').style.display = 'none';
-      successView.classList.add('active');
-      document.getElementById('successEmail').textContent = els.email.value || 'your email';
+      document.getElementById('planNameField').value = selectedPlan;
+      document.getElementById('billingCycleField').value = billingCycle;
+      document.getElementById('registerField').value = '1';
+      form.submit();
     }
   });
 
@@ -708,9 +838,21 @@
   Object.values(els).forEach(el => el.addEventListener('input', updatePreview));
   els.cuisine.addEventListener('change', updatePreview);
 
+  document.querySelectorAll('.plan-card').forEach(card => {
+    card.classList.toggle('selected', card.dataset.plan === selectedPlan);
+  });
+  document.querySelectorAll('.cycle-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.cycle === billingCycle);
+  });
+
   renderStepUI();
   updatePreview();
   toggleCardFormForPlan();
+<?php if ($error !== ''): ?>
+  step = 4;
+  renderStepUI();
+  alert(<?php echo json_encode($error); ?>);
+<?php endif; ?>
 </script>
 
 </body>

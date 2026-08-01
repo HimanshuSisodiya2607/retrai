@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -E \"^\\(CREATE TABLE|  \\\\`|\\\\\\) ENGINE\\)\" database/restroai.sql)",
+      "Bash(grep -vE \"^\\\\s*\\(--|$|/\\\\*|\\\\s*\\(PRIMARY|KEY|UNIQUE|CONSTRAINT|FOREIGN|INDEX\\)\\)\" database/restroai.sql)",
+      "Bash(/Applications/XAMPP/xamppfiles/bin/mysql -uroot restroai -e \"SHOW CREATE TABLE table_requests\\\\G\")",
+      "Bash(/Applications/XAMPP/xamppfiles/bin/php -l Restro/table-requests-poll.php)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost/restai/Restro/sign-in.php)",
+      "Bash(/Applications/XAMPP/xamppfiles/bin/mysql -uroot restroai -e \"SELECT request_key,table_key,type,status FROM table_requests;\")",
+      "Bash(/Applications/XAMPP/xamppfiles/bin/mysql -uroot restroai -e \"SELECT restro_key,email,password,is_active FROM restaurants;\")",
+      "Bash(/Applications/XAMPP/xamppfiles/bin/php -l Restro/table-request-stream.php)",
+      "Bash(/Applications/XAMPP/xamppfiles/bin/php -l Restro/customer-menu.php)",
+      "Bash(rm -f steps.txt stream_out.txt invalid_out.txt)",
+      "Bash(chmod +x sse_test.sh)",
+      "Bash(./sse_test.sh)",
+      "Bash(grep -v \"^$\")",
+      "Bash(/Applications/XAMPP/xamppfiles/bin/mysql -uroot restroai -e \"DELETE FROM orders WHERE order_key='ord_test_bill'; SELECT COUNT\\(*\\) AS leftover_test_rows FROM orders WHERE order_key LIKE 'ord_test%';\")",
+      "Bash(/Applications/XAMPP/xamppfiles/bin/mysql -uroot restroai -e \"SELECT COUNT\\(*\\) AS my_test_row FROM orders WHERE order_key='ord_test_bill'; SELECT order_key,status FROM orders WHERE order_key LIKE 'ord_test%' LIMIT 3;\")",
+      "Bash(/Applications/XAMPP/xamppfiles/bin/mysql -uroot restroai -e \"SELECT TABLE_NAME,TABLE_COLLATION FROM information_schema.TABLES WHERE TABLE_SCHEMA='restroai';\")",
+      "Bash(/Applications/XAMPP/xamppfiles/bin/mysql -uroot restroai)",
+      "Bash(/Applications/XAMPP/xamppfiles/bin/mysql -uroot restroai -e \"DESCRIBE bills;\")",
+      "Bash(/Applications/XAMPP/xamppfiles/bin/php -l Restro/tables.php)"
+    ]
+  }
+}

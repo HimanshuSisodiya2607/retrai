@@ -1,3 +1,20 @@
+<?php
+session_start();
+require_once __DIR__ . '/../database/db.php';
+require_once __DIR__ . '/includes/helpers.php';
+
+if (empty($_SESSION['restro_key'])) {
+    header('Location: sign-in.php');
+    exit;
+}
+
+$restro_key = $_SESSION['restro_key'];
+session_write_close();
+
+extract(restro_load_nav($conn, $restro_key));
+$current_page = 'ar-studio';
+
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -14,36 +31,7 @@
 <div id="bg-glow"></div>
 
 <div class="shell">
-  <aside class="sidebar">
-    <div class="logo"><span class="logo-dot"></span>RestroAI</div>
-    <div class="nav-group">
-      <div class="group-label">Operate</div>
-      <a href="overview.html" class="nav-item"><span class="ico">▦</span>Overview</a>
-      <a href="orders.html" class="nav-item"><span class="ico">☰</span>Live Orders<span class="badge" id="navOrderCount">0</span></a>
-      <a href="tables.html" class="nav-item"><span class="ico">▥</span>Tables<span class="badge" id="navTableCount">0</span></a>
-      <a href="menu.html" class="nav-item"><span class="ico">▣</span>Menu</a>
-      <a href="categories.html" class="nav-item"><span class="ico">▨</span>Categories</a>
-      <a href="inventory.html" class="nav-item"><span class="ico">◈</span>Inventory<span class="badge">3</span></a>
-    </div>
-    <div class="nav-group">
-      <div class="group-label">Grow</div>
-      <a href="ai-insights.html" class="nav-item"><span class="ico">✦</span>AI Insights</a>
-      <a href="marketing.html" class="nav-item"><span class="ico">↗</span>Marketing</a>
-      <a href="ar-studio.html" class="nav-item"><span class="ico">◐</span>AR Menu Studio</a>
-      <a href="analytics.html" class="nav-item"><span class="ico">▤</span>Analytics</a>
-    </div>
-    <div class="nav-group">
-      <div class="group-label">Manage</div>
-      <a href="settings.html" class="nav-item"><span class="ico">⚙</span>Settings</a>
-      <a href="staff.html" class="nav-item"><span class="ico">◎</span>Staff &amp; Roles</a>
-    </div>
-    <div class="sidebar-foot">
-      <div class="owner-card">
-        <div class="owner-avatar">SB</div>
-        <div><div class="owner-name">Spice Bazaar</div><div class="owner-role">Owner Dashboard</div></div>
-      </div>
-    </div>
-  </aside>
+  <?php include __DIR__ . '/includes/sidebar.php'; ?>
 
   <div class="main">
     <div class="topbar">
@@ -115,7 +103,7 @@
   </div>
 </div>
 
-<script src="assets/app.js"></script>
+<?php include __DIR__ . '/includes/mobile-nav.php'; ?>
 
 </body>
 </html>

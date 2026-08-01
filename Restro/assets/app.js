@@ -82,6 +82,110 @@ const STORAGE_KEY = 'restroai_panel_state_v2';
     return new Set(state.orders.filter(o=>o.status!=='completed').map(o=>o.tableId));
   }
 
+  function getTableOrders(tableId){
+    return state.orders.filter(o => o.tableId === tableId && o.status !== 'completed');
+  }
+
+  function parseOrderItems(itemsStr){
+    return itemsStr.split(', ').map(part => {
+      const match = part.match(/^(.+?)\s*×(\d+)$/);
+      if(match) return {name: match[1].trim(), qty: parseInt(match[2], 10)};
+      return {name: part.trim(), qty: 1};
+    });
+  }
+
+  function menuPriceFor(name){
+    const dish = state.menu.find(d => d.name.toLowerCase() === name.toLowerCase());
+    return dish ? dish.price : null;
+  }
+
+  function buildBillData(tableId){
+    const table = state.tables.find(t => t.id === tableId);
+    const orders = getTableOrders(tableId);
+    const lineMap = {};
+
+    orders.forEach(order => {
+      parseOrderItems(order.items).forEach(({name, qty}) => {
+        const key = name.toLowerCase();
+        if(lineMap[key]){
+          lineMap[key].qty += qty;
+        } else {
+          lineMap[key] = {name, qty, unitPrice: menuPriceFor(name)};
+        }
+      });
+    });
+
+    const lines = Object.values(lineMap);
+    const subtotal = lines.reduce((sum, line) => {
+      return sum + (line.unitPrice != null ? line.unitPrice * line.qty : 0);
+    }, 0);
+    const total = orders.reduce((sum, o) => sum + Number(o.amount || 0), 0);
+
+    return {table, orders, lines, subtotal, total};
+  }
+
+  function printBill(tableId){
+    const {table, orders, lines, subtotal, total} = buildBillData(tableId);
+    if(!table){ return; }
+    if(orders.length === 0){
+      alert('No active orders for this table — nothing to bill.');
+      return;
+    }
+
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('en-IN', {weekday:'short', day:'numeric', month:'short', year:'numeric'});
+    const timeStr = now.toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit'});
+
+    const rows = lines.map(line => {
+      const unit = line.unitPrice != null ? '₹' + line.unitPrice.toLocaleString('en-IN') : '—';
+      const amt = line.unitPrice != null ? '₹' + (line.unitPrice * line.qty).toLocaleString('en-IN') : '—';
+      return '<tr><td>' + line.name + '</td><td class="c">' + line.qty + '</td><td class="r">' + unit + '</td><td class="r">' + amt + '</td></tr>';
+    }).join('');
+
+    const w = window.open('', '_blank', 'width=420,height=640');
+    if(!w){ alert('Please allow pop-ups to print the bill.'); return; }
+
+    w.document.write(
+      '<html><head><title>Bill — ' + table.name + '</title>' +
+      '<style>' +
+      '*{box-sizing:border-box;margin:0;padding:0;}' +
+      'body{font-family:Arial,Helvetica,sans-serif;color:#111;padding:28px 22px;max-width:320px;margin:0 auto;}' +
+      '.brand{text-align:center;border-bottom:2px dashed #ccc;padding-bottom:14px;margin-bottom:14px;}' +
+      '.brand h1{font-size:20px;letter-spacing:0.04em;}' +
+      '.brand p{font-size:11px;color:#666;margin-top:4px;}' +
+      '.meta{font-size:12px;margin-bottom:16px;line-height:1.7;}' +
+      '.meta strong{font-weight:700;}' +
+      'table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:12px;}' +
+      'th{text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:#666;border-bottom:1px solid #ddd;padding:6px 4px;}' +
+      'th.c,td.c{text-align:center;}' +
+      'th.r,td.r{text-align:right;}' +
+      'td{padding:7px 4px;border-bottom:1px dotted #e5e5e5;vertical-align:top;}' +
+      '.totals{border-top:2px solid #111;padding-top:10px;font-size:13px;}' +
+      '.totals .row{display:flex;justify-content:space-between;padding:3px 0;}' +
+      '.totals .grand{font-size:17px;font-weight:700;margin-top:6px;padding-top:8px;border-top:1px dashed #ccc;}' +
+      '.foot{text-align:center;margin-top:22px;font-size:10px;color:#999;letter-spacing:0.06em;}' +
+      '@media print{body{padding:12px;}}' +
+      '</style></head><body>' +
+      '<div class="brand"><h1>SPICE BAZAAR</h1><p>RestroAI · Dine-in Bill</p></div>' +
+      '<div class="meta">' +
+      '<div><strong>Table:</strong> ' + table.name + '</div>' +
+      '<div><strong>Date:</strong> ' + dateStr + ' · ' + timeStr + '</div>' +
+      '<div><strong>Orders:</strong> ' + orders.length + '</div>' +
+      '</div>' +
+      '<table><thead><tr><th>Item</th><th class="c">Qty</th><th class="r">Rate</th><th class="r">Amt</th></tr></thead><tbody>' +
+      rows +
+      '</tbody></table>' +
+      '<div class="totals">' +
+      (subtotal > 0 && subtotal !== total ? '<div class="row"><span>Subtotal</span><span>₹' + subtotal.toLocaleString('en-IN') + '</span></div>' : '') +
+      '<div class="row grand"><span>Total</span><span>₹' + total.toLocaleString('en-IN') + '</span></div>' +
+      '</div>' +
+      '<div class="foot">THANK YOU · VISIT AGAIN</div>' +
+      '<script>window.onload=function(){setTimeout(function(){window.print();},300);};<' + '/script>' +
+      '</body></html>'
+    );
+    w.document.close();
+  }
+
   function setOrderTab(tab){
     orderTab = tab;
     document.getElementById('tabActive').classList.toggle('active', tab==='active');
@@ -447,6 +551,7 @@ const STORAGE_KEY = 'restroai_panel_state_v2';
             <span class="table-status ${busy ? 'busy' : 'free'}">${busy ? 'Occupied' : 'Free'}</span>
             <div class="table-foot">
               <div class="dish-actions">
+                ${busy ? `<button type="button" class="advance-btn" onclick="event.stopPropagation(); printBill(${t.id})" title="Print bill">Bill</button>` : ''}
                 <button type="button" class="a" onclick="event.stopPropagation(); openQrModal(${t.id})" title="Print QR">QR</button>
                 <button type="button" class="a" onclick="event.stopPropagation(); openTableModal(${t.id})" title="Edit">✎</button>
                 <button type="button" class="a" onclick="event.stopPropagation(); deleteTable(${t.id})" title="Delete">✕</button>
