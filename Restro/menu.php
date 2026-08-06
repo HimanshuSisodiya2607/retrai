@@ -2,6 +2,7 @@
 session_start();
 require_once __DIR__ . '/../database/db.php';
 require_once __DIR__ . '/includes/helpers.php';
+require_once __DIR__ . '/includes/uploads.php';
 
 if (empty($_SESSION['restro_key'])) {
     header('Location: sign-in.php');
@@ -50,11 +51,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['save_item'])) {
     $emoji = trim($_POST['emoji'] ?? '') ?: '🍽';
     $description = trim($_POST['description'] ?? '');
     $price = (float) ($_POST['price'] ?? 0);
-    $glb_url = trim($_POST['glb_url'] ?? '');
     $is_active = !empty($_POST['is_active']) ? 1 : 0;
-    $glb_db = $glb_url !== '' ? $glb_url : null;
 
-    if ($name === '' || $price <= 0) {
+    // The 3D model is delivered by the RestroAI team via the AR Studio
+    // request flow, so it is never edited here — carry the existing value.
+    $glb_db = null;
+    $existing_photo = null;
+    if ($item_key !== '') {
+        $cur = mysqli_prepare($conn, "SELECT glb_url, photo_url FROM items WHERE item_key = ? AND restro_key = ?");
+        mysqli_stmt_bind_param($cur, 'ss', $item_key, $restro_key);
+        mysqli_stmt_execute($cur);
+        $cur_row = mysqli_fetch_assoc(mysqli_stmt_get_result($cur));
+        mysqli_stmt_close($cur);
+        $glb_db = $cur_row['glb_url'] ?? null;
+        $existing_photo = $cur_row['photo_url'] ?? null;
+    }
+
+    $photo_db = $existing_photo;
+    if (!empty($_POST['remove_photo'])) {
+        delete_upload($existing_photo);
+        $photo_db = null;
+    }
+    if (($_FILES['photo']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE) {
+        $up = store_dish_photo($_FILES['photo']);
+        if (!$up['ok']) {
+            $error = $up['error'];
+            $show_modal = true;
+        } else {
+            delete_upload($existing_photo);
+            $photo_db = $up['path'];
+        }
+    }
+
+    if ($error !== '') {
+        // fall through to re-render the modal with the message
+    } elseif ($name === '' || $price <= 0) {
         $error = 'Please add at least a name and price.';
         $show_modal = true;
     } elseif ($category_key === '') {
@@ -79,12 +110,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['save_item'])) {
             mysqli_stmt_close($sort_stmt);
 
             $ins = mysqli_prepare($conn, "
-                INSERT INTO items (item_key, restro_key, category_key, name, emoji, description, price, glb_url, is_active, sort_order)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO items (item_key, restro_key, category_key, name, emoji, description, photo_url, price, glb_url, is_active, sort_order)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ");
             mysqli_stmt_bind_param(
-                $ins, 'ssssssdsii',
-                $item_key, $restro_key, $category_key, $name, $emoji, $description, $price, $glb_db, $is_active, $sort_order
+                $ins, 'sssssssdsii',
+                $item_key, $restro_key, $category_key, $name, $emoji, $description, $photo_db, $price, $glb_db, $is_active, $sort_order
             );
             mysqli_stmt_execute($ins);
             mysqli_stmt_close($ins);
@@ -93,12 +124,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['save_item'])) {
         } else {
             $upd = mysqli_prepare($conn, "
                 UPDATE items
-                SET category_key = ?, name = ?, emoji = ?, description = ?, price = ?, glb_url = ?, is_active = ?
+                SET category_key = ?, name = ?, emoji = ?, description = ?, photo_url = ?, price = ?, is_active = ?
                 WHERE item_key = ? AND restro_key = ?
             ");
             mysqli_stmt_bind_param(
-                $upd, 'ssssdsiss',
-                $category_key, $name, $emoji, $description, $price, $glb_db, $is_active, $item_key, $restro_key
+                $upd, 'sssssdiss',
+                $category_key, $name, $emoji, $description, $photo_db, $price, $is_active, $item_key, $restro_key
             );
             mysqli_stmt_execute($upd);
             mysqli_stmt_close($upd);
@@ -117,7 +148,7 @@ if (!$show_modal) {
 
 if ($edit_key !== '') {
     $stmt = mysqli_prepare($conn, "
-        SELECT item_key, category_key, name, emoji, description, price, glb_url, is_active
+        SELECT item_key, category_key, name, emoji, description, photo_url, price, glb_url, is_active
         FROM items
         WHERE item_key = ? AND restro_key = ?
     ");
@@ -142,7 +173,7 @@ mysqli_stmt_close($stmt);
 
 // Menu items (query from restroai.sql)
 $stmt = mysqli_prepare($conn, "
-    SELECT i.item_key, i.name, i.emoji, i.description, i.price, i.glb_url, i.is_active,
+    SELECT i.item_key, i.name, i.emoji, i.description, i.photo_url, i.price, i.glb_url, i.is_active,
            c.name AS category_name, c.category_key
     FROM items i
     JOIN categories c ON c.category_key = i.category_key AND c.restro_key = i.restro_key
@@ -170,7 +201,7 @@ $form_item = $edit_item ?: ($_SERVER['REQUEST_METHOD'] === 'POST' ? $_POST : nul
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/style.css">
+<link rel="stylesheet" href="assets/style.css?v=<?php echo @filemtime(__DIR__ . '/assets/style.css'); ?>">
 </head>
 <body>
 
@@ -203,7 +234,13 @@ $form_item = $edit_item ?: ($_SERVER['REQUEST_METHOD'] === 'POST' ? $_POST : nul
         <?php foreach ($dishes as $d): ?>
           <div class="dish-card<?php echo (int) $d['is_active'] === 1 ? '' : ' inactive'; ?>">
             <div class="dish-top">
-              <div class="dish-emoji"><?php echo htmlspecialchars($d['emoji'] ?: '🍽'); ?></div>
+              <div class="dish-emoji<?php echo !empty($d['photo_url']) ? ' has-photo' : ''; ?>">
+                <?php if (!empty($d['photo_url'])): ?>
+                  <img src="<?php echo htmlspecialchars(asset_url($d['photo_url'])); ?>" alt="">
+                <?php else: ?>
+                  <?php echo htmlspecialchars($d['emoji'] ?: '🍽'); ?>
+                <?php endif; ?>
+              </div>
               <form method="post" action="menu.php" style="display:inline;">
                 <input type="hidden" name="toggle_item" value="<?php echo htmlspecialchars($d['item_key']); ?>">
                 <button type="submit" class="toggle<?php echo (int) $d['is_active'] === 1 ? ' on' : ''; ?>" aria-label="Toggle availability"></button>
@@ -238,7 +275,7 @@ $form_item = $edit_item ?: ($_SERVER['REQUEST_METHOD'] === 'POST' ? $_POST : nul
 <div class="modal-overlay<?php echo $show_modal ? ' open' : ''; ?>" id="menuModalOverlay">
   <div class="modal">
     <h3><?php echo $edit_item ? 'Edit Menu Item' : 'Add Menu Item'; ?></h3>
-    <form method="post" action="menu.php">
+    <form method="post" action="menu.php" enctype="multipart/form-data">
       <input type="hidden" name="save_item" value="1">
       <input type="hidden" name="item_key" value="<?php echo htmlspecialchars($edit_item['item_key'] ?? ($form_item['item_key'] ?? '')); ?>">
       <div class="field-row">
@@ -279,10 +316,34 @@ $form_item = $edit_item ?: ($_SERVER['REQUEST_METHOD'] === 'POST' ? $_POST : nul
         <label for="description">Description</label>
         <textarea id="description" name="description" placeholder="Short description shown on the menu"><?php echo htmlspecialchars($edit_item['description'] ?? ($form_item['description'] ?? '')); ?></textarea>
       </div>
+      <?php $cur_photo = $edit_item['photo_url'] ?? null; ?>
       <div class="field">
-        <label for="glb_url">3D Model URL (.glb) — optional</label>
-        <input type="text" id="glb_url" name="glb_url" placeholder="https://.../dish-model.glb" value="<?php echo htmlspecialchars($edit_item['glb_url'] ?? ($form_item['glb_url'] ?? '')); ?>">
+        <label for="photo">Dish photo — optional</label>
+        <?php if ($cur_photo): ?>
+          <div class="photo-current">
+            <img src="../<?php echo htmlspecialchars($cur_photo); ?>" alt="">
+            <label class="photo-remove">
+              <input type="checkbox" name="remove_photo" value="1" style="accent-color:#ff5a1f;">
+              Remove this photo
+            </label>
+          </div>
+        <?php endif; ?>
+        <input type="file" id="photo" name="photo" accept="image/jpeg,image/png,image/webp,image/gif">
+        <div class="field-hint">JPG, PNG, WEBP or GIF · up to 4 MB. Shown to guests on the QR menu.</div>
       </div>
+
+      <?php if ($edit_item): ?>
+      <div class="field">
+        <label>3D AR model</label>
+        <div class="field-hint">
+          <?php if (!empty($edit_item['glb_url'])): ?>
+            ✅ This dish has an AR model. Guests can view it in 3D.
+          <?php else: ?>
+            Request one from <a href="ar-studio.php" style="color:var(--ember);">AR Menu Studio</a> — our team builds and delivers it.
+          <?php endif; ?>
+        </div>
+      </div>
+      <?php endif; ?>
       <label class="check-row">
         <input type="checkbox" name="is_active" value="1" style="accent-color:#ff5a1f;"<?php echo ($edit_item ? (int) $edit_item['is_active'] === 1 : ($form_item ? !empty($form_item['is_active']) : true)) ? ' checked' : ''; ?>>
         Active — visible on customer menu

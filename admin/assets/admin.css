@@ -1,0 +1,91 @@
+/* Admin-panel additions on top of Restro/assets/style.css.
+   Only what the tenant dashboard doesn't already provide. */
+
+.logo-tag{
+  font-family:var(--font-mono);font-size:9px;letter-spacing:0.12em;
+  background:var(--grad-ai);color:#fff;padding:2px 6px;border-radius:5px;
+  margin-left:8px;vertical-align:middle;
+}
+.admin-avatar{background:var(--grad-ai) !important;color:#fff !important;}
+.admin-signout{
+  display:block;margin-top:12px;font-size:12px;color:var(--text-low);
+  text-decoration:none;transition:color .15s ease;
+}
+.admin-signout:hover{color:var(--ember);}
+
+/* --- stat tiles --- */
+.stat-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:26px;}
+.stat-tile{background:var(--bg-panel);border:1px solid var(--line);border-radius:16px;padding:18px 20px;}
+.stat-tile .k{font-family:var(--font-mono);font-size:10px;letter-spacing:0.09em;text-transform:uppercase;color:var(--text-low);}
+.stat-tile .v{font-family:var(--font-display);font-size:27px;font-weight:600;margin-top:8px;color:var(--text-hi);}
+.stat-tile .s{font-size:11px;color:var(--text-mid);margin-top:4px;}
+.stat-tile.accent .v{background:var(--grad-ai);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
+
+/* --- data tables --- */
+.panel{background:var(--bg-panel);border:1px solid var(--line);border-radius:16px;padding:20px 22px;margin-bottom:22px;overflow-x:auto;}
+.panel-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px;}
+.panel-head h3{font-family:var(--font-display);font-size:15px;font-weight:600;}
+.panel-head .sub{font-size:12px;color:var(--text-low);}
+.dt{width:100%;border-collapse:collapse;font-size:13px;min-width:560px;}
+.dt th{
+  font-family:var(--font-mono);font-size:10px;letter-spacing:0.07em;text-transform:uppercase;
+  color:var(--text-low);text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);white-space:nowrap;
+}
+.dt td{padding:11px 10px;border-bottom:1px solid rgba(255,255,255,0.05);vertical-align:middle;}
+.dt tbody tr:hover{background:var(--glass);}
+.dt .r{text-align:right;font-family:var(--font-mono);}
+.dt .num{font-family:var(--font-mono);}
+.dt a.link{color:var(--text-hi);text-decoration:none;font-weight:500;}
+.dt a.link:hover{color:var(--ember);}
+
+.pill{
+  display:inline-block;font-family:var(--font-mono);font-size:10px;letter-spacing:0.05em;
+  padding:3px 9px;border-radius:20px;text-transform:uppercase;white-space:nowrap;
+}
+.pill.on{background:rgba(74,222,128,0.12);color:var(--good);border:1px solid rgba(74,222,128,0.3);}
+.pill.off{background:rgba(255,31,76,0.12);color:var(--signal);border:1px solid rgba(255,31,76,0.3);}
+.pill.plan{background:var(--glass-strong);color:var(--text-mid);border:1px solid var(--line);}
+
+.btn-xs{
+  display:inline-block;font-size:11px;padding:5px 11px;border-radius:8px;cursor:pointer;
+  border:1px solid var(--line);background:var(--glass);color:var(--text-mid);
+  text-decoration:none;font-family:inherit;transition:all .15s ease;white-space:nowrap;
+}
+.btn-xs:hover{background:var(--glass-strong);color:var(--text-hi);border-color:rgba(255,255,255,0.18);}
+.btn-xs.primary{background:var(--grad-ai);color:#fff;border-color:transparent;}
+.btn-xs.danger:hover{color:var(--signal);border-color:rgba(255,31,76,0.4);}
+
+.admin-toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:18px;}
+.admin-toolbar input[type=search],.admin-toolbar select{
+  background:var(--bg-panel);border:1px solid var(--line);border-radius:10px;
+  color:var(--text-hi);padding:9px 13px;font-size:13px;font-family:inherit;
+}
+.admin-toolbar input[type=search]{min-width:230px;flex:1;max-width:340px;}
+
+.inline-form{display:flex;gap:6px;align-items:center;}
+.inline-form input[type=number],.inline-form input[type=text]{
+  background:var(--bg);border:1px solid var(--line);border-radius:8px;color:var(--text-hi);
+  padding:6px 9px;font-size:12px;font-family:var(--font-mono);width:92px;
+}
+
+.empty{text-align:center;padding:40px 20px;color:var(--text-low);font-size:13px;}
+.flash{border-radius:12px;padding:12px 16px;margin-bottom:18px;font-size:13px;}
+.flash.ok{background:rgba(74,222,128,0.1);border:1px solid rgba(74,222,128,0.3);color:var(--good);}
+.flash.err{background:rgba(255,31,76,0.1);border:1px solid rgba(255,31,76,0.3);color:var(--signal);}
+
+/* Banner injected into the tenant dashboard while impersonating. */
+.impersonate-bar{
+  position:sticky;top:0;z-index:900;display:flex;align-items:center;justify-content:space-between;
+  gap:12px;flex-wrap:wrap;padding:9px 18px;background:var(--grad-ai);color:#fff;
+  font-size:12.5px;font-family:var(--font-body);
+}
+.impersonate-bar a{
+  color:#fff;text-decoration:none;border:1px solid rgba(255,255,255,0.5);
+  padding:4px 11px;border-radius:7px;font-size:11.5px;white-space:nowrap;
+}
+.impersonate-bar a:hover{background:rgba(255,255,255,0.16);}
+
+@media(max-width:720px){
+  .stat-tile .v{font-size:22px;}
+  .panel{padding:16px 14px;}
+}

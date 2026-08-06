@@ -1,0 +1,4 @@
+php_flag engine off
+<FilesMatch "\.(php|php3|php4|php5|phtml|pl|py|cgi|asp|aspx|sh)$">
+  Require all denied
+</FilesMatch>

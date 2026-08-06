@@ -1,6 +1,7 @@
 <?php
 session_start();
 require_once __DIR__ . '/../database/db.php';
+require_once __DIR__ . '/includes/uploads.php';
 
 $is_waiter = !empty($_SESSION['waiter_staff_key']);
 $is_admin = !empty($_SESSION['restro_key']) && !$is_waiter;
@@ -157,7 +158,7 @@ if ($table && $placed_order_key !== '') {
 if ($table && !$placed_order) {
     $stmt = mysqli_prepare($conn, "
         SELECT c.name AS category_name, c.sort_order AS cat_sort,
-               i.item_key, i.name, i.emoji, i.description, i.price, i.glb_url, i.sort_order AS item_sort
+               i.item_key, i.name, i.emoji, i.description, i.photo_url, i.price, i.glb_url, i.sort_order AS item_sort
         FROM categories c
         JOIN items i ON i.category_key = c.category_key AND i.restro_key = c.restro_key
         WHERE c.restro_key = ? AND i.is_active = 1
@@ -189,7 +190,7 @@ $menu_empty = $show_menu && count($menu_groups) === 0;
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/menu.css">
+<link rel="stylesheet" href="assets/menu.css?v=<?php echo @filemtime(__DIR__ . '/assets/menu.css'); ?>">
 <script type="module" src="https://unpkg.com/@google/model-viewer@3.4.0/dist/model-viewer.min.js"></script>
 <style>
   /* Customer-only quick actions: Call Waiter / Ask for Bill */
@@ -285,7 +286,13 @@ $menu_empty = $show_menu && count($menu_groups) === 0;
             <div class="menu-dish-grid">
               <?php foreach ($items as $d): ?>
                 <div class="menu-dish-card">
-                  <div class="mdc-emoji"><?php echo htmlspecialchars($d['emoji'] ?: '🍽'); ?></div>
+                  <div class="mdc-emoji<?php echo !empty($d['photo_url']) ? ' has-photo' : ''; ?>">
+                    <?php if (!empty($d['photo_url'])): ?>
+                      <img src="<?php echo htmlspecialchars(asset_url($d['photo_url'])); ?>" alt="<?php echo htmlspecialchars($d['name'], ENT_QUOTES); ?>" loading="lazy">
+                    <?php else: ?>
+                      <?php echo htmlspecialchars($d['emoji'] ?: '🍽'); ?>
+                    <?php endif; ?>
+                  </div>
                   <div class="mdc-body">
                     <div class="mdc-row">
                       <h4><?php echo htmlspecialchars($d['name']); ?></h4>
@@ -294,7 +301,7 @@ $menu_empty = $show_menu && count($menu_groups) === 0;
                     <?php if (!empty($d['description'])): ?>
                       <p class="mdc-desc"><?php echo htmlspecialchars($d['description']); ?></p>
                     <?php endif; ?>
-                    <button type="button" class="ar-badge-btn" data-name="<?php echo htmlspecialchars($d['name'], ENT_QUOTES); ?>" data-glb="<?php echo htmlspecialchars($d['glb_url'] ?? '', ENT_QUOTES); ?>" onclick="viewInAR(this)">📱 View in AR</button>
+                    <button type="button" class="ar-badge-btn" data-name="<?php echo htmlspecialchars($d['name'], ENT_QUOTES); ?>" data-glb="<?php echo htmlspecialchars(asset_url($d['glb_url'] ?? ''), ENT_QUOTES); ?>" onclick="viewInAR(this)">📱 View in AR</button>
                   </div>
                   <div class="mdc-qty" id="qtyctrl-<?php echo htmlspecialchars($d['item_key']); ?>"></div>
                 </div>

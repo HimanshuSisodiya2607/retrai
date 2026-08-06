@@ -19,7 +19,12 @@
       "Bash(/Applications/XAMPP/xamppfiles/bin/mysql -uroot restroai -e \"SELECT TABLE_NAME,TABLE_COLLATION FROM information_schema.TABLES WHERE TABLE_SCHEMA='restroai';\")",
       "Bash(/Applications/XAMPP/xamppfiles/bin/mysql -uroot restroai)",
       "Bash(/Applications/XAMPP/xamppfiles/bin/mysql -uroot restroai -e \"DESCRIBE bills;\")",
-      "Bash(/Applications/XAMPP/xamppfiles/bin/php -l Restro/tables.php)"
+      "Bash(/Applications/XAMPP/xamppfiles/bin/php -l Restro/tables.php)",
+      "Bash(/Applications/XAMPP/xamppfiles/bin/php -l Restro/staff.php)",
+      "Bash(/Applications/XAMPP/xamppfiles/bin/php -l Restro/includes/sidebar.php)",
+      "Bash(curl -s -b cj.txt \"http://localhost/restai/Restro/staff.php\")",
+      "Bash(/Applications/XAMPP/xamppfiles/bin/mysql -uroot -N restroai -e \"SHOW TABLES;\")",
+      "Bash(/Applications/XAMPP/xamppfiles/bin/mysql -uroot restroai -e \"SELECT restro_key,restaurant_name,plan_name,is_active FROM restaurants;\")"
     ]
   }
 }

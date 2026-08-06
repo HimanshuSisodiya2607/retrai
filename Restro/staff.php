@@ -176,7 +176,7 @@ $form_staff = $edit_staff ?: ($_SERVER['REQUEST_METHOD'] === 'POST' ? $_POST : n
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/style.css">
+<link rel="stylesheet" href="assets/style.css?v=<?php echo @filemtime(__DIR__ . '/assets/style.css'); ?>">
 <style>
   /* Updated for the new Email column — 7 tracks now instead of the old 5/6.
      Move this into style.css and remove this block once merged in. */
@@ -205,35 +205,7 @@ $form_staff = $edit_staff ?: ($_SERVER['REQUEST_METHOD'] === 'POST' ? $_POST : n
 <div id="bg-glow"></div>
 
 <div class="shell">
-  <aside class="sidebar">
-    <div class="logo"><span class="logo-dot"></span>RestroAI</div>
-    <div class="nav-group">
-      <div class="group-label">Operate</div>
-      <a href="overview.php" class="nav-item"><span class="ico">▦</span>Overview</a>
-      <a href="orders.php" class="nav-item"><span class="ico">☰</span>Live Orders<span class="badge"><?php echo $nav_order_count; ?></span></a>
-      <a href="tables.php" class="nav-item"><span class="ico">▥</span>Tables<span class="badge"><?php echo $nav_table_count; ?></span></a>
-      <a href="menu.php" class="nav-item"><span class="ico">▣</span>Menu</a>
-      <a href="categories.php" class="nav-item"><span class="ico">▨</span>Categories</a>
-    </div>
-    <div class="nav-group">
-      <div class="group-label">Grow</div>
-      <a href="ai-insights.php" class="nav-item"><span class="ico">✦</span>AI Insights</a>
-      <a href="marketing.html" class="nav-item"><span class="ico">↗</span>Marketing</a>
-      <a href="ar-studio.html" class="nav-item"><span class="ico">◐</span>AR Menu Studio</a>
-      <a href="analytics.php" class="nav-item"><span class="ico">▤</span>Analytics</a>
-    </div>
-    <div class="nav-group">
-      <div class="group-label">Manage</div>
-      <a href="settings.php" class="nav-item"><span class="ico">⚙</span>Settings</a>
-      <a href="staff.php" class="nav-item active"><span class="ico">◎</span>Staff &amp; Roles</a>
-    </div>
-    <div class="sidebar-foot">
-      <div class="owner-card">
-        <div class="owner-avatar"><?php echo htmlspecialchars($owner_initials); ?></div>
-        <div><div class="owner-name"><?php echo htmlspecialchars($restaurant['restaurant_name'] ?? ''); ?></div><div class="owner-role">Owner Dashboard</div></div>
-      </div>
-    </div>
-  </aside>
+  <?php include __DIR__ . '/includes/sidebar.php'; ?>
 
   <div class="main">
     <div class="topbar">

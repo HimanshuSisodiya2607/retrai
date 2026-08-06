@@ -89,24 +89,38 @@
     background:rgba(255,255,255,0.02);color:var(--text-hi);font-size:18px;line-height:1;
     align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;
   }
+  /* Sign in lives in the top bar on desktop; it moves into the dropdown
+     on small phones where the ghost button is hidden for space. */
+  .nav-links .nav-signin{display:none;}
+
   @media(max-width:900px){
-    nav{position:relative;flex-wrap:wrap;gap:10px;}
-    .nav-toggle{display:flex;margin-left:auto;}
+    /* One row only — nowrap keeps the header a predictable height so the
+       dropdown, anchored to the row itself, always clears it. */
+    nav{position:relative;flex-wrap:nowrap;gap:12px;}
+    .nav-cta{margin-left:auto;}
+    .nav-toggle{display:flex;order:3;}
     .nav-links{
-      display:none;position:fixed;top:76px;left:22px;right:22px;
+      display:none;position:absolute;top:calc(100% + 14px);left:0;right:0;
       flex-direction:column;gap:0;z-index:150;
       background:rgba(11,11,13,0.96);border:1px solid var(--line);border-radius:16px;
       padding:8px;backdrop-filter:blur(20px) saturate(140%);
       box-shadow:0 24px 60px rgba(0,0,0,0.5);
+      max-height:calc(100vh - 130px);overflow-y:auto;
     }
     body.nav-open .nav-links{display:flex;}
     .nav-links a{padding:14px 16px;border-bottom:1px solid rgba(255,255,255,0.06);}
     .nav-links a:last-child{border-bottom:none;}
-    .nav-cta{margin-left:0;}
   }
-  @media(max-width:480px){
+  /* Below this, logo + both buttons + toggle stop fitting on one row. */
+  @media(max-width:620px){
     .nav-cta .btn-ghost{display:none;}
-    .nav-cta .btn-primary{padding:11px 16px;font-size:13px;}
+    .nav-cta .btn-primary{padding:10px 15px;font-size:13px;}
+    .logo{font-size:17px;}
+    /* Ghost button is gone above, so surface Sign in inside the menu. */
+    .nav-links .nav-signin{display:block;color:var(--ember);}
+  }
+  @media(max-width:380px){
+    .nav-cta .btn-primary{padding:9px 12px;font-size:12px;}
   }
   .nav-links a{transition:color .25s ease;}
   .nav-links a:hover{color:var(--text-hi);}
@@ -217,7 +231,7 @@
 
   .phone-stage{display:flex;justify-content:center;position:relative;}
   .phone{
-    width:290px;height:590px;border-radius:44px;
+    width:min(290px,100%);aspect-ratio:29/59;border-radius:44px;
     background:linear-gradient(160deg, #141414, #060606);
     border:1px solid rgba(255,255,255,0.12);
     padding:14px;position:relative;
@@ -353,6 +367,49 @@
   .footer-row{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:20px;}
   .footer-row .fine{font-size:13px;color:var(--text-low);font-family:var(--font-mono);}
 
+  /* ---------- mobile ---------- */
+
+  /* The pointer glow tracks a mouse; on touch it just sticks where the
+     last tap landed, so drop it on devices that can't hover. */
+  @media(hover:none){
+    .cursor-light{display:none;}
+  }
+
+  @media(max-width:768px){
+    /* 130px of vertical padding is a lot of dead scrolling on a phone. */
+    .section{padding:76px 0;}
+    .cta-section{padding:88px 0;}
+    .section-head{margin-bottom:44px;}
+    /* min-height:100vh fights the mobile address bar and leaves the hero
+       over-tall once the content already fills it. */
+    .hero{min-height:auto;padding:118px 0 72px;}
+    .ar-grid,.hero-grid{gap:48px;}
+    .brain-header{flex-wrap:wrap;gap:12px;}
+    .footer-row{gap:14px;}
+    .footer-row .fine{font-size:12px;line-height:1.6;}
+  }
+
+  @media(max-width:560px){
+    /* Three metrics on one row overflow a phone; overflow-x:hidden was
+       silently clipping the third one instead of showing a scrollbar. */
+    .hero-metrics{gap:14px 22px;flex-wrap:wrap;margin-top:40px;padding-top:24px;}
+    .metric{min-width:88px;}
+    .metric b{font-size:20px;}
+    .metric span{font-size:10px;letter-spacing:0.04em;}
+    .hero p.sub{font-size:15.5px;}
+    .hero-ctas{margin-top:30px;gap:10px;}
+    .hero-ctas .btn-lg{padding:13px 22px;font-size:14px;flex:1;justify-content:center;}
+    .dashboard{padding:20px;}
+    .dash-head .value{font-size:25px;}
+    .dash-row{font-size:12.5px;gap:10px;}
+    .dash-row .name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+    .ar-badge{gap:10px;padding:11px 13px;}
+    .ar-badge .dish-name{font-size:12px;line-height:1.3;}
+    .feature-card{padding:26px 22px;}
+    .brain-card{padding:22px 20px;}
+    .journey-card{padding:16px 18px;}
+  }
+
   @media (prefers-reduced-motion: reduce){
     *{animation-duration:0.01ms !important;animation-iteration-count:1 !important;transition-duration:0.01ms !important;}
   }
@@ -376,6 +433,7 @@
         <a href="#journey">How it works</a>
         <a href="#brain">AI Brain</a>
         <a href="#features">Platform</a>
+        <a href="Restro/sign-in.php" class="nav-signin">Sign in</a>
       </div>
       <div class="nav-cta" style="display:flex;gap:10px;">
         <a href="Restro/sign-in.php" class="btn btn-ghost">Sign in</a>
@@ -462,7 +520,8 @@
               environment-image="neutral"
               ar
               ar-modes="webxr scene-viewer quick-look"
-              interaction-prompt="none">
+              interaction-prompt="none"
+              touch-action="pan-y">
             </model-viewer>
             <div class="ar-badge">
               <span class="dish-name">Signature Dish — AR Preview</span>
@@ -662,10 +721,37 @@
   revealEls.forEach(el => io.observe(el));
 
   const navToggle = document.getElementById('navToggle');
+  const navLinks = document.getElementById('navLinks');
   if(navToggle){
-    navToggle.addEventListener('click', () => document.body.classList.toggle('nav-open'));
-    document.querySelectorAll('.nav-links a').forEach(a => {
-      a.addEventListener('click', () => document.body.classList.remove('nav-open'));
+    const setNav = (open) => {
+      document.body.classList.toggle('nav-open', open);
+      navToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+      navToggle.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
+      navToggle.textContent = open ? '✕' : '☰';
+    };
+    setNav(false);
+
+    navToggle.addEventListener('click', (e) => {
+      e.stopPropagation();
+      setNav(!document.body.classList.contains('nav-open'));
+    });
+
+    navLinks.querySelectorAll('a').forEach(a => {
+      a.addEventListener('click', () => setNav(false));
+    });
+
+    // Tapping anywhere else, or pressing Escape, closes the menu —
+    // otherwise it can only be dismissed from the toggle itself.
+    document.addEventListener('click', (e) => {
+      if(document.body.classList.contains('nav-open') && !navLinks.contains(e.target)){
+        setNav(false);
+      }
+    });
+    document.addEventListener('keydown', (e) => {
+      if(e.key === 'Escape') setNav(false);
+    });
+    window.addEventListener('resize', () => {
+      if(window.innerWidth > 900) setNav(false);
     });
   }
 </script>

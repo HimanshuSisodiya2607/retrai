@@ -367,3 +367,50 @@ CREATE TABLE IF NOT EXISTS bills (
   CONSTRAINT fk_bills_restro FOREIGN KEY (restro_key)
     REFERENCES restaurants(restro_key) ON UPDATE CASCADE ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================================
+-- super_admins — platform operators, not tenants.
+-- Separate from `restaurants` so platform access can never be
+-- reached through a restaurant login. Passwords are stored as
+-- plaintext, matching the tenant logins.
+-- ============================================================
+CREATE TABLE IF NOT EXISTS super_admins (
+  id            INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  admin_key     VARCHAR(32)  NOT NULL,
+  name          VARCHAR(120) NOT NULL,
+  email         VARCHAR(180) NOT NULL,
+  password      VARCHAR(255) NOT NULL,
+  is_active     TINYINT(1)   NOT NULL DEFAULT 1,
+  last_login_at DATETIME     NULL,
+  created_at    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uniq_admin_key (admin_key),
+  UNIQUE KEY uniq_admin_email (email)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================================
+-- Dish photos, uploaded by the restaurant on the menu page.
+-- ============================================================
+ALTER TABLE items ADD COLUMN photo_url VARCHAR(500) NULL AFTER description;
+
+-- ============================================================
+-- ar_requests — a restaurant asks for a 3D model of one dish.
+-- Raised from the AR Menu Studio, fulfilled by a super admin
+-- uploading the .glb, which then lands on items.glb_url.
+-- ============================================================
+CREATE TABLE IF NOT EXISTS ar_requests (
+  id           INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  request_key  VARCHAR(32) NOT NULL,
+  restro_key   VARCHAR(32) NOT NULL,
+  item_key     VARCHAR(32) NOT NULL,
+  status       ENUM('requested','in_progress','delivered','rejected') NOT NULL DEFAULT 'requested',
+  admin_note   VARCHAR(500) NULL,
+  requested_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  delivered_at DATETIME NULL,
+  UNIQUE KEY uniq_ar_request (request_key),
+  UNIQUE KEY uniq_ar_item (item_key),
+  KEY idx_ar_status (status),
+  KEY idx_ar_restro (restro_key),
+  CONSTRAINT fk_ar_item FOREIGN KEY (item_key)
+    REFERENCES items(item_key) ON UPDATE CASCADE ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

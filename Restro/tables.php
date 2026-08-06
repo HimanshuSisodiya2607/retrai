@@ -183,7 +183,7 @@ if (!empty($_GET['checkout'])) {
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/style.css">
+<link rel="stylesheet" href="assets/style.css?v=<?php echo @filemtime(__DIR__ . '/assets/style.css'); ?>">
 <style>
 .checkout-wrap{max-width:520px;margin:40px auto;padding:0 20px 60px;position:relative;z-index:1;}
 .checkout-notice{background:rgba(255,179,71,0.1);border:1px solid rgba(255,179,71,0.35);border-radius:12px;padding:14px 16px;margin-bottom:20px;font-size:13px;color:var(--amber);line-height:1.5;}
@@ -199,7 +199,7 @@ if (!empty($_GET['checkout'])) {
 .discount-box{background:var(--bg-panel);border:1px solid var(--line);border-radius:16px;padding:18px 22px;margin-bottom:20px;}
 .discount-label{font-family:var(--font-mono);font-size:10px;color:var(--text-low);text-transform:uppercase;letter-spacing:0.08em;display:block;margin-bottom:10px;}
 .discount-row{display:flex;gap:10px;}
-.discount-select,.discount-input{background:var(--bg-deep);border:1px solid var(--line);border-radius:10px;color:var(--text-high);padding:10px 12px;font-size:13px;font-family:inherit;}
+.discount-select,.discount-input{background:var(--bg);border:1px solid var(--line);border-radius:10px;color:var(--text-hi);padding:10px 12px;font-size:13px;font-family:inherit;}
 .discount-select{flex:1;}
 .discount-input{width:120px;font-family:var(--font-mono);}
 .discount-input:disabled{opacity:0.4;}
@@ -566,7 +566,7 @@ $qr_url = $qr_table ? tableMenuUrl($qr_table['table_key'], $qr_table['table_name
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/style.css">
+<link rel="stylesheet" href="assets/style.css?v=<?php echo @filemtime(__DIR__ . '/assets/style.css'); ?>">
 </head>
 <body>
 
