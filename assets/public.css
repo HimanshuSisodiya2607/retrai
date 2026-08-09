@@ -162,6 +162,8 @@ footer{border-top:1px solid var(--line);padding:40px 0;margin-top:60px;}
 }
 
 /* ---- Dinetous logo ---- */
-.logo-img{height:30px;width:auto;display:block;mix-blend-mode:screen;}
+.logo-img{height:46px;width:auto;display:block;mix-blend-mode:screen;}
 .logo{display:flex;align-items:center;gap:8px;}
-@media(max-width:520px){.logo-img{height:26px;}}
+footer .logo-img{height:38px;}
+@media(max-width:900px){.logo-img{height:38px;}}
+@media(max-width:520px){.logo-img{height:32px;}footer .logo-img{height:30px;}}

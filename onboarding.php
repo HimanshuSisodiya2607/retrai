@@ -482,8 +482,9 @@ $post = $_SERVER['REQUEST_METHOD'] === 'POST' ? $_POST : [];
   .pay-status.warn{background:rgba(255,179,71,0.1);border-color:rgba(255,179,71,0.32);color:var(--amber);}
   .pay-status.err{background:rgba(255,31,76,0.1);border-color:rgba(255,31,76,0.3);color:#ff6b6b;}
   #payBtn:disabled{opacity:0.6;cursor:default;transform:none;}
-  .logo-img{height:30px;width:auto;display:block;mix-blend-mode:screen;}
-  @media(max-width:520px){.logo-img{height:25px;}}
+  .logo-img{height:48px;width:auto;display:block;mix-blend-mode:screen;}
+  @media(max-width:900px){.logo-img{height:40px;}}
+  @media(max-width:520px){.logo-img{height:33px;}}
 </style>
 </head>
 <body>

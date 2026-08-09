@@ -552,6 +552,8 @@ model-viewer button[slot="ar-button"]{position:absolute;bottom:14px;right:14px;z
 .signout-link:hover{color:var(--signal);background:rgba(255,31,76,0.07);}
 
 /* ---- Dinetous logo ---- */
-.logo-img{height:30px;width:auto;display:block;mix-blend-mode:screen;}
+.logo-img{height:44px;width:auto;display:block;mix-blend-mode:screen;}
 .logo{display:flex;align-items:center;gap:8px;}
-@media(max-width:520px){.logo-img{height:26px;}}
+.auth-logo .logo-img{height:52px;}
+@media(max-width:900px){.logo-img{height:38px;}}
+@media(max-width:520px){.logo-img{height:32px;}.auth-logo .logo-img{height:42px;}}
