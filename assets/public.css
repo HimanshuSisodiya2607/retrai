@@ -37,7 +37,7 @@ h1,h2,h3,h4{font-family:var(--font-display);letter-spacing:-0.02em;font-weight:6
 
 /* header */
 .site-head{
-  position:sticky;top:0;z-index:60;padding:16px 0;
+  position:sticky;top:0;z-index:60;padding:10px 0;
   background:rgba(5,5,5,0.82);backdrop-filter:blur(16px) saturate(140%);
   border-bottom:1px solid var(--line);
 }
@@ -162,8 +162,9 @@ footer{border-top:1px solid var(--line);padding:40px 0;margin-top:60px;}
 }
 
 /* ---- Dinetous logo ---- */
-.logo-img{height:46px;width:auto;display:block;mix-blend-mode:screen;}
+.logo-img{height:62px;width:auto;display:block;mix-blend-mode:screen;}
 .logo{display:flex;align-items:center;gap:8px;}
-footer .logo-img{height:38px;}
-@media(max-width:900px){.logo-img{height:38px;}}
-@media(max-width:520px){.logo-img{height:32px;}footer .logo-img{height:30px;}}
+footer .logo-img{height:52px;}
+@media(max-width:900px){.logo-img{height:52px;}footer .logo-img{height:46px;}}
+@media(max-width:520px){.logo-img{height:44px;}footer .logo-img{height:40px;}}
+@media(max-width:400px){.logo-img{height:40px;}}

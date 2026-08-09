@@ -91,8 +91,8 @@
 }
 
 /* ---- Dinetous logo ---- */
-.logo-img{height:44px;width:auto;display:block;mix-blend-mode:screen;}
+.logo-img{height:56px;width:auto;display:block;mix-blend-mode:screen;}
 .logo{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
-.auth-logo .logo-img{height:52px;}
-@media(max-width:900px){.logo-img{height:38px;}}
-@media(max-width:520px){.logo-img{height:32px;}}
+.auth-logo .logo-img{height:72px;}
+@media(max-width:900px){.logo-img{height:52px;}.auth-logo .logo-img{height:64px;}}
+@media(max-width:520px){.logo-img{height:50px;}.auth-logo .logo-img{height:58px;}}
