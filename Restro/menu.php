@@ -53,7 +53,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['save_item'])) {
     $price = (float) ($_POST['price'] ?? 0);
     $is_active = !empty($_POST['is_active']) ? 1 : 0;
 
-    // The 3D model is delivered by the RestroAI team via the AR Studio
+    // The 3D model is delivered by the Dinetous team via the AR Studio
     // request flow, so it is never edited here — carry the existing value.
     $glb_db = null;
     $existing_photo = null;
@@ -196,8 +196,9 @@ $form_item = $edit_item ?: ($_SERVER['REQUEST_METHOD'] === 'POST' ? $_POST : nul
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<link rel="icon" type="image/png" href="../assets/logo-icon.png">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Menu — RestroAI</title>
+<title>Menu — Dinetous</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -214,9 +215,12 @@ $form_item = $edit_item ?: ($_SERVER['REQUEST_METHOD'] === 'POST' ? $_POST : nul
     <div class="topbar">
       <div><h1>Menu Management</h1><div class="sub">Add dishes, adjust prices, toggle availability</div></div>
       <div class="topbar-right">
-        <div class="search-box">🔍 Search orders, dishes…</div>
-        <div class="icon-btn">🔔<span class="dot"></span></div>
-        <div class="restaurant-pill"><span class="dot"></span>Open — Dine-in</div>
+        <div class="search-box" id="topbarSearchBox">
+          <span class="si-icon">🔍</span>
+          <input type="search" id="topbarSearch" autocomplete="off" spellcheck="false"
+                 placeholder="Search orders, dishes, tables…" aria-label="Search">
+          <kbd>/</kbd>
+        </div>
       </div>
     </div>
 
@@ -383,5 +387,6 @@ $form_item = $edit_item ?: ($_SERVER['REQUEST_METHOD'] === 'POST' ? $_POST : nul
 })();
 </script>
 
+<script src="assets/topbar-search.js?v=<?php echo @filemtime(__DIR__ . '/assets/topbar-search.js'); ?>"></script>
 </body>
 </html>

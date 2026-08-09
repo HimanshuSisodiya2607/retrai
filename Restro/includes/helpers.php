@@ -19,7 +19,7 @@ function restro_load_nav(mysqli $conn, string $restro_key): array {
     $row = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt));
     mysqli_stmt_close($stmt);
 
-    $restaurant_name = $row['restaurant_name'] ?? 'RestroAI';
+    $restaurant_name = $row['restaurant_name'] ?? 'Dinetous';
 
     $stmt = mysqli_prepare($conn, "SELECT COUNT(*) AS c FROM orders WHERE restro_key = ? AND status != 'completed'");
     mysqli_stmt_bind_param($stmt, 's', $restro_key);

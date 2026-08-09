@@ -19,7 +19,7 @@ $current_page = $current_page ?? '';
   </div>
 <?php endif; ?>
 <aside class="sidebar">
-  <div class="logo"><span class="logo-dot"></span>RestroAI</div>
+  <div class="logo"><img src="../assets/logo.png" alt="Dinetous" class="logo-img"></div>
   <div class="nav-group">
     <div class="group-label">Operate</div>
     <a href="overview.php" class="nav-item<?php echo restro_nav_active('overview', $current_page); ?>"><span class="ico">▦</span>Overview</a>
@@ -42,7 +42,14 @@ $current_page = $current_page ?? '';
   <div class="sidebar-foot">
     <div class="owner-card">
       <div class="owner-avatar"><?php echo htmlspecialchars($owner_initials); ?></div>
-      <div><div class="owner-name"><?php echo htmlspecialchars($restaurant_name); ?></div><div class="owner-role">Owner Dashboard</div></div>
+      <div class="owner-meta">
+        <div class="owner-name"><?php echo htmlspecialchars($restaurant_name); ?></div>
+        <div class="owner-role">Owner Dashboard</div>
+      </div>
+      <a href="logout.php" class="signout-btn" title="Sign out" aria-label="Sign out"
+         onclick="return confirm('Sign out of <?php echo htmlspecialchars(addslashes($restaurant_name), ENT_QUOTES); ?>?');">⏻</a>
     </div>
+    <a href="logout.php" class="signout-link"
+       onclick="return confirm('Sign out of <?php echo htmlspecialchars(addslashes($restaurant_name), ENT_QUOTES); ?>?');">Sign out</a>
   </div>
 </aside>

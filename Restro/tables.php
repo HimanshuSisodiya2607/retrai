@@ -178,6 +178,7 @@ if (!empty($_GET['checkout'])) {
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<link rel="icon" type="image/png" href="../assets/logo-icon.png">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Checkout — <?php echo htmlspecialchars($table['table_name']); ?></title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -330,6 +331,7 @@ if (!empty($_GET['checkout'])) {
 })();
 </script>
 </div>
+<script src="assets/topbar-search.js?v=<?php echo @filemtime(__DIR__ . '/assets/topbar-search.js'); ?>"></script>
 </body>
 </html>
     <?php
@@ -401,7 +403,7 @@ td{padding:7px 4px;border-bottom:1px dotted #e5e5e5;vertical-align:top;}
 </style>
 </head>
 <body>
-<div class="brand"><h1><?php echo htmlspecialchars($brand_name); ?></h1><p>RestroAI · Dine-in Bill</p></div>
+<div class="brand"><h1><?php echo htmlspecialchars($brand_name); ?></h1><p>Dinetous · Dine-in Bill</p></div>
 <div class="meta">
   <div><strong>Table:</strong> <?php echo htmlspecialchars($table['table_name']); ?></div>
   <div><strong>Date:</strong> <?php echo htmlspecialchars($date_str); ?> · <?php echo htmlspecialchars($time_str); ?></div>
@@ -562,7 +564,7 @@ $qr_url = $qr_table ? tableMenuUrl($qr_table['table_key'], $qr_table['table_name
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Tables — RestroAI</title>
+<title>Tables — Dinetous</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -579,9 +581,12 @@ $qr_url = $qr_table ? tableMenuUrl($qr_table['table_key'], $qr_table['table_name
     <div class="topbar">
       <div><h1>Tables</h1><div class="sub">Floor status at a glance</div></div>
       <div class="topbar-right">
-        <div class="search-box">🔍 Search orders, dishes…</div>
-        <div class="icon-btn">🔔<span class="dot"></span></div>
-        <div class="restaurant-pill"><span class="dot"></span>Open — Dine-in</div>
+        <div class="search-box" id="topbarSearchBox">
+          <span class="si-icon">🔍</span>
+          <input type="search" id="topbarSearch" autocomplete="off" spellcheck="false"
+                 placeholder="Search orders, dishes, tables…" aria-label="Search">
+          <kbd>/</kbd>
+        </div>
       </div>
     </div>
 

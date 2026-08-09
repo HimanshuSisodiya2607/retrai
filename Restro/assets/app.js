@@ -166,7 +166,7 @@ const STORAGE_KEY = 'restroai_panel_state_v2';
       '.foot{text-align:center;margin-top:22px;font-size:10px;color:#999;letter-spacing:0.06em;}' +
       '@media print{body{padding:12px;}}' +
       '</style></head><body>' +
-      '<div class="brand"><h1>SPICE BAZAAR</h1><p>RestroAI · Dine-in Bill</p></div>' +
+      '<div class="brand"><h1>SPICE BAZAAR</h1><p>Dinetous · Dine-in Bill</p></div>' +
       '<div class="meta">' +
       '<div><strong>Table:</strong> ' + table.name + '</div>' +
       '<div><strong>Date:</strong> ' + dateStr + ' · ' + timeStr + '</div>' +

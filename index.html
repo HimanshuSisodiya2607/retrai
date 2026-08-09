@@ -2,8 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<link rel="icon" type="image/png" href="assets/logo-icon.png">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RestroAI — The AI Operating System For The Future Of Restaurants</title>
+<title>Dinetous — The AI Operating System For The Future Of Restaurants</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -415,6 +416,8 @@
   }
 
   :focus-visible{outline:2px solid var(--ember);outline-offset:3px;}
+  .logo-img{height:30px;width:auto;display:block;mix-blend-mode:screen;}
+  @media(max-width:520px){.logo-img{height:25px;}}
 </style>
 </head>
 <body>
@@ -426,9 +429,10 @@
 <header id="siteHeader">
   <div class="wrap">
     <nav>
-      <div class="logo"><span class="logo-dot"></span>RestroAI</div>
+      <div class="logo"><img src="assets/logo.png" alt="Dinetous" class="logo-img"></div>
       <button type="button" class="nav-toggle" id="navToggle" aria-label="Open menu">☰</button>
       <div class="nav-links" id="navLinks">
+        <a href="restaurants">Find restaurants</a>
         <a href="#ar">AR Menu</a>
         <a href="#journey">How it works</a>
         <a href="#brain">AI Brain</a>
@@ -451,8 +455,8 @@
       <h1>The AI Operating System<br>For The <span class="accent">Future</span> Of Restaurants</h1>
       <p class="sub">Automate ordering, create immersive AR food experiences, and let AI optimize your restaurant growth — all from one intelligent system.</p>
       <div class="hero-ctas">
-        <a href="#" class="btn btn-primary btn-lg">Start Modernizing</a>
-        <a href="#ar" class="btn btn-ghost btn-lg"><span class="play-icon">▸</span> Watch Demo</a>
+        <a href="onboarding.php" class="btn btn-primary btn-lg">Start Modernizing</a>
+        <a href="restaurants" class="btn btn-ghost btn-lg">Find restaurants near you</a>
       </div>
       <div class="hero-metrics">
         <div class="metric"><b>3.2×</b><span>Faster Table Turns</span></div>
@@ -683,15 +687,20 @@
   <div class="wrap reveal">
     <div class="eyebrow" style="justify-content:center;">Get Started</div>
     <h2>Give Your Restaurant An Operating System, Not Just An App.</h2>
-    <p>Join the restaurants already running on RestroAI's intelligent core.</p>
+    <p>Join the restaurants already running on Dinetous's intelligent core.</p>
     <a href="#" class="btn btn-primary btn-lg">Start Modernizing</a>
   </div>
 </section>
 
 <footer>
   <div class="wrap footer-row">
-    <div class="logo"><span class="logo-dot"></span>RestroAI</div>
-    <div class="fine">© 2026 RestroAI — The AI Operating System For Restaurants</div>
+    <div class="logo"><img src="assets/logo.png" alt="Dinetous" class="logo-img"></div>
+    <div style="display:flex;gap:18px;flex-wrap:wrap;font-size:13px;color:var(--text-mid);">
+      <a href="restaurants">Restaurant directory</a>
+      <a href="Restro/sign-in.php">Sign in</a>
+      <a href="onboarding.php">List your restaurant</a>
+    </div>
+    <div class="fine">© 2026 Dinetous — The AI Operating System For Restaurants</div>
   </div>
 </footer>
 

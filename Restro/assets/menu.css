@@ -1,5 +1,5 @@
 /* ============================================================
-   RestroAI — Customer Menu Theme
+   Dinetous — Customer Menu Theme
    Matches the landing page / onboarding design system:
    deep black bg, ember/red glow accents, glassmorphism.
    ============================================================ */
@@ -246,3 +246,6 @@
 /* Real dish photo replaces the emoji tile when one is uploaded. */
 .mdc-emoji.has-photo{padding:0;overflow:hidden;background:none;}
 .mdc-emoji.has-photo img{width:100%;height:100%;object-fit:cover;display:block;}
+
+/* ---- Dinetous logo ---- */
+.order-header .logo-img{height:24px;width:auto;display:inline-block;vertical-align:middle;mix-blend-mode:screen;}

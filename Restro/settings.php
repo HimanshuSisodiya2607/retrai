@@ -2,6 +2,7 @@
 session_start();
 require_once __DIR__ . '/../database/db.php';
 require_once __DIR__ . '/includes/helpers.php';
+require_once __DIR__ . '/../includes/directory.php';
 
 if (empty($_SESSION['restro_key'])) {
     header('Location: sign-in.php');
@@ -30,7 +31,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['clear_orders'])) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['save_settings'])) {
     $restaurant_name = trim($_POST['restaurant_name'] ?? '');
     $cuisine = trim($_POST['cuisine'] ?? '');
+    $city = trim($_POST['city'] ?? '');
+    $tagline = mb_substr(trim($_POST['tagline'] ?? ''), 0, 200);
     $address = trim($_POST['address'] ?? '');
+    $is_listed = !empty($_POST['is_listed']) ? 1 : 0;
     $opening_time = trim($_POST['opening_time'] ?? '');
     $closing_time = trim($_POST['closing_time'] ?? '');
     $notify_new_orders = !empty($_POST['notify_new_orders']) ? 1 : 0;
@@ -41,17 +45,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['save_settings'])) {
     } else {
         $upd = mysqli_prepare($conn, "
             UPDATE restaurants
-            SET restaurant_name = ?, cuisine = ?, address = ?, opening_time = ?, closing_time = ?,
-                notify_new_orders = ?, notify_weekly_digest = ?
+            SET restaurant_name = ?, cuisine = ?, city = ?, tagline = ?, address = ?,
+                opening_time = ?, closing_time = ?,
+                notify_new_orders = ?, notify_weekly_digest = ?, is_listed = ?
             WHERE restro_key = ?
         ");
         mysqli_stmt_bind_param(
-            $upd, 'sssssiss',
-            $restaurant_name, $cuisine, $address, $opening_time, $closing_time,
-            $notify_new_orders, $notify_weekly_digest, $restro_key
+            $upd, 'sssssssiiis',
+            $restaurant_name, $cuisine, $city, $tagline, $address, $opening_time, $closing_time,
+            $notify_new_orders, $notify_weekly_digest, $is_listed, $restro_key
         );
         mysqli_stmt_execute($upd);
         mysqli_stmt_close($upd);
+
+        // Keep the public directory URL and city grouping in step.
+        sync_restaurant_directory_fields($conn, $restro_key);
 
         $_SESSION['restaurant_name'] = $restaurant_name;
         $success = 'Settings saved.';
@@ -60,8 +68,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['save_settings'])) {
 
 // Load restaurant settings
 $stmt = mysqli_prepare($conn, "
-    SELECT restaurant_name, owner_name, cuisine, city, address, opening_time, closing_time,
-           notify_new_orders, notify_weekly_digest
+    SELECT restaurant_name, owner_name, cuisine, city, tagline, address, opening_time, closing_time,
+           notify_new_orders, notify_weekly_digest, slug, is_listed
     FROM restaurants
     WHERE restro_key = ?
 ");
@@ -82,8 +90,9 @@ $display_closing = $settings['closing_time'] ?? '11:30 PM';
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<link rel="icon" type="image/png" href="../assets/logo-icon.png">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Settings — RestroAI</title>
+<title>Settings — Dinetous</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -100,9 +109,12 @@ $display_closing = $settings['closing_time'] ?? '11:30 PM';
     <div class="topbar">
       <div><h1>Settings</h1><div class="sub">Restaurant profile and preferences</div></div>
       <div class="topbar-right">
-        <div class="search-box">🔍 Search orders, dishes…</div>
-        <div class="icon-btn">🔔<span class="dot"></span></div>
-        <div class="restaurant-pill"><span class="dot"></span>Open — Dine-in</div>
+        <div class="search-box" id="topbarSearchBox">
+          <span class="si-icon">🔍</span>
+          <input type="search" id="topbarSearch" autocomplete="off" spellcheck="false"
+                 placeholder="Search orders, dishes, tables…" aria-label="Search">
+          <kbd>/</kbd>
+        </div>
       </div>
     </div>
 
@@ -131,6 +143,24 @@ $display_closing = $settings['closing_time'] ?? '11:30 PM';
                 <input type="text" id="cuisine" name="cuisine" value="<?php echo htmlspecialchars($settings['cuisine'] ?? ''); ?>">
               </div>
             </div>
+            <div class="field-row">
+              <div class="field">
+                <label for="city">City</label>
+                <input type="text" id="city" name="city" list="cityOptions" autocomplete="address-level2"
+                       placeholder="e.g. Bikaner" value="<?php echo htmlspecialchars($settings['city'] ?? ''); ?>">
+                <datalist id="cityOptions">
+                  <?php foreach (directory_cities() as $c): ?>
+                    <option value="<?php echo htmlspecialchars($c); ?>"></option>
+                  <?php endforeach; ?>
+                </datalist>
+                <div class="field-hint">Decides which city page you appear on in the public directory.</div>
+              </div>
+              <div class="field">
+                <label for="tagline">Tagline</label>
+                <input type="text" id="tagline" name="tagline" maxlength="200" placeholder="e.g. Authentic Rajasthani thalis since 1998" value="<?php echo htmlspecialchars($settings['tagline'] ?? ''); ?>">
+                <div class="field-hint">One line shown under your name in search results.</div>
+              </div>
+            </div>
             <div class="field">
               <label for="address">Address</label>
               <input type="text" id="address" name="address" value="<?php echo htmlspecialchars($display_address); ?>">
@@ -145,6 +175,28 @@ $display_closing = $settings['closing_time'] ?? '11:30 PM';
                 <input type="text" id="closing_time" name="closing_time" value="<?php echo htmlspecialchars($display_closing); ?>">
               </div>
             </div>
+          </div>
+
+          <div class="settings-section">
+            <h3>Public Listing</h3>
+            <label class="toggle-row" style="cursor:pointer;">
+              <div>
+                <div class="t-label">List us in the Dinetous directory</div>
+                <div class="t-sub">Diners searching for restaurants in your city can find you on Google.</div>
+              </div>
+              <input type="checkbox" name="is_listed" value="1" style="width:18px;height:18px;accent-color:#ff5a1f;"<?php echo (int) ($settings['is_listed'] ?? 1) === 1 ? ' checked' : ''; ?>>
+            </label>
+            <?php if (!empty($settings['slug'])): ?>
+              <div class="toggle-row" style="gap:12px;flex-wrap:wrap;">
+                <div style="min-width:0;">
+                  <div class="t-label">Your public page</div>
+                  <div class="t-sub" style="word-break:break-all;font-family:var(--font-mono);font-size:11.5px;">
+                    <?php echo htmlspecialchars(restaurant_url($settings['slug'])); ?>
+                  </div>
+                </div>
+                <a href="<?php echo htmlspecialchars(restaurant_url($settings['slug'])); ?>" target="_blank" rel="noopener" class="btn btn-ghost" style="flex-shrink:0;">View page ↗</a>
+              </div>
+            <?php endif; ?>
           </div>
 
           <div class="settings-section">
@@ -205,5 +257,6 @@ $display_closing = $settings['closing_time'] ?? '11:30 PM';
 })();
 </script>
 
+<script src="assets/topbar-search.js?v=<?php echo @filemtime(__DIR__ . '/assets/topbar-search.js'); ?>"></script>
 </body>
 </html>

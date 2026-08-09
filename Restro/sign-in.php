@@ -44,8 +44,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<link rel="icon" type="image/png" href="../assets/logo-icon.png">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Sign In — RestroAI</title>
+<title>Sign In — Dinetous</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -57,7 +58,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <div class="auth-grain"></div>
 
 <div class="auth-wrap">
-  <a href="../index.html" class="auth-logo"><span class="logo-dot"></span>RestroAI</a>
+  <a href="../index.html" class="auth-logo"><img src="../assets/logo.png" alt="Dinetous" class="logo-img"></a>
 
   <div class="auth-card">
     <div class="auth-card-head">

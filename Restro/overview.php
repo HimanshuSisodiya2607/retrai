@@ -177,8 +177,9 @@ mysqli_stmt_close($stmt);
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<link rel="icon" type="image/png" href="../assets/logo-icon.png">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Overview — RestroAI</title>
+<title>Overview — Dinetous</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -236,9 +237,12 @@ mysqli_stmt_close($stmt);
     <div class="topbar">
       <div><h1>Overview</h1><div class="sub"><?php echo htmlspecialchars($topbar_date); ?><?php echo $topbar_city !== '' ? ' · ' . htmlspecialchars($topbar_city) : ''; ?></div></div>
       <div class="topbar-right">
-        <div class="search-box">🔍 Search orders, dishes…</div>
-        <div class="icon-btn" id="bellIcon">🔔<span class="dot"></span><span class="bell-count" id="bellCount">0</span></div>
-        <div class="restaurant-pill"><span class="dot"></span>Open — Dine-in</div>
+        <div class="search-box" id="topbarSearchBox">
+          <span class="si-icon">🔍</span>
+          <input type="search" id="topbarSearch" autocomplete="off" spellcheck="false"
+                 placeholder="Search orders, dishes, tables…" aria-label="Search">
+          <kbd>/</kbd>
+        </div>
       </div>
     </div>
 
@@ -434,12 +438,14 @@ window.ORDERS_LIVE_CONFIG = {
   function render(requests){
     if(requests.length === 0){
       panel.style.display = 'none';
-      bellCount.style.display = 'none';
+      if(bellCount) bellCount.style.display = 'none';
       return;
     }
     panel.style.display = 'block';
-    bellCount.style.display = 'flex';
-    bellCount.textContent = requests.length > 9 ? '9+' : String(requests.length);
+    if(bellCount){
+      bellCount.style.display = 'flex';
+      bellCount.textContent = requests.length > 9 ? '9+' : String(requests.length);
+    }
 
     list.innerHTML = requests.map(function(r){
       const meta = TYPE_META[r.type] || {icon:'🔔', label:'made a request'};
@@ -507,5 +513,6 @@ window.ORDERS_LIVE_CONFIG = {
 })();
 </script>
 
+<script src="assets/topbar-search.js?v=<?php echo @filemtime(__DIR__ . '/assets/topbar-search.js'); ?>"></script>
 </body>
 </html>

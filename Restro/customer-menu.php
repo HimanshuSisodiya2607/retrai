@@ -185,8 +185,9 @@ $menu_empty = $show_menu && count($menu_groups) === 0;
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<link rel="icon" type="image/png" href="../assets/logo-icon.png">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Menu — RestroAI</title>
+<title>Menu — Dinetous</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -225,7 +226,7 @@ $menu_empty = $show_menu && count($menu_groups) === 0;
 <div class="grain"></div>
 
 <div class="order-page-wrap" id="pageWrap">
-  <div class="order-header"><span class="logo-dot"></span>RestroAI</div>
+  <div class="order-header"><img src="../assets/logo.png" alt="Dinetous" class="logo-img"></div>
 
   <?php if ($table && !$is_waiter && !$is_admin): ?>
   <div class="quick-actions-bar" id="quickActionsBar">

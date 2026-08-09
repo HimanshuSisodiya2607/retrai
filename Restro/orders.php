@@ -215,8 +215,9 @@ mysqli_stmt_close($stmt);
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<link rel="icon" type="image/png" href="../assets/logo-icon.png">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Live Orders — RestroAI</title>
+<title>Live Orders — Dinetous</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -273,9 +274,12 @@ mysqli_stmt_close($stmt);
     <div class="topbar">
       <div><h1>Live Orders</h1><div class="sub">Track every order from kitchen to table</div></div>
       <div class="topbar-right">
-        <div class="search-box">🔍 Search orders, dishes…</div>
-        <div class="icon-btn" id="bellIcon">🔔<span class="dot"></span><span class="bell-count" id="bellCount">0</span></div>
-        <div class="restaurant-pill"><span class="dot"></span>Open — Dine-in</div>
+        <div class="search-box" id="topbarSearchBox">
+          <span class="si-icon">🔍</span>
+          <input type="search" id="topbarSearch" autocomplete="off" spellcheck="false"
+                 placeholder="Search orders, dishes, tables…" aria-label="Search">
+          <kbd>/</kbd>
+        </div>
       </div>
     </div>
 
@@ -530,5 +534,6 @@ window.ORDERS_LIVE_CONFIG = {
 })();
 </script>
 
+<script src="assets/topbar-search.js?v=<?php echo @filemtime(__DIR__ . '/assets/topbar-search.js'); ?>"></script>
 </body>
 </html>

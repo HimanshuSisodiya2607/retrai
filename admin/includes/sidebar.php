@@ -3,7 +3,7 @@
 $current_page = $current_page ?? '';
 ?>
 <aside class="sidebar">
-  <div class="logo"><span class="logo-dot"></span>RestroAI<span class="logo-tag">ADMIN</span></div>
+  <div class="logo"><img src="../assets/logo.png" alt="Dinetous" class="logo-img"><span class="logo-tag">ADMIN</span></div>
   <div class="nav-group">
     <div class="group-label">Platform</div>
     <a href="index.php" class="nav-item<?php echo admin_nav_active('dashboard', $current_page); ?>"><span class="ico">▦</span>Dashboard</a>

@@ -113,7 +113,9 @@
     const pill = document.getElementById('ordersLivePill');
     if (!pill) return;
     if (state === 'live') {
-      pill.textContent = mode === 'sse' ? 'LIVE (SSE)' : 'LIVE';
+      // The transport (stream vs poll) is an implementation detail —
+      // the user only needs to know updates are live.
+      pill.textContent = 'LIVE';
       pill.classList.add('live-on');
     } else if (state === 'error') {
       pill.textContent = 'OFFLINE';

@@ -1,6 +1,6 @@
 <?php
 /**
- * RestroAI — Server-Sent Events (SSE) Live Stream Endpoint
+ * Dinetous — Server-Sent Events (SSE) Live Stream Endpoint
  * Pushes real-time order updates and table requests to the dashboard.
  */
 if (session_status() === PHP_SESSION_NONE) {

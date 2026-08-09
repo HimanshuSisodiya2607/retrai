@@ -1,6 +1,6 @@
 <?php
 /**
- * RestroAI — Customer-side SSE stream.
+ * Dinetous — Customer-side SSE stream.
  * Pushes the live state of a table's "Call Waiter" / "Ask for Bill"
  * requests to customer-menu.php, replacing its 10s poll.
  *

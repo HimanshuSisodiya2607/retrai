@@ -1,0 +1,15 @@
+User-agent: *
+
+# Public, crawlable: the landing page and the restaurant directory.
+Allow: /restai/restaurants
+Allow: /restai/r/
+
+# Private app surfaces — nothing here belongs in search results.
+Disallow: /restai/admin/
+Disallow: /restai/waiter_panel/
+Disallow: /restai/Restro/
+Disallow: /restai/database/
+Disallow: /restai/uploads/models/
+Disallow: /restai/onboarding.php
+
+Sitemap: http://localhost/restai/sitemap.xml

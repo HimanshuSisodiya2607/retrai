@@ -1,0 +1,33 @@
+# Clean, stable public URLs. Search rankings attach to a URL, so these
+# must not change once indexed.
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /restai/
+
+  # Never rewrite real files or directories.
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+
+  # /sitemap.xml -> generated feed
+  RewriteRule ^sitemap\.xml$ sitemap.php [L]
+
+  # /r/spice-bazaar -> one restaurant
+  RewriteRule ^r/([A-Za-z0-9-]+)/?$ restaurant.php?slug=$1 [L,QSA]
+
+  # /restaurants and /restaurants/bikaner
+  RewriteRule ^restaurants/?$ restaurants.php [L,QSA]
+  RewriteRule ^restaurants/([A-Za-z0-9-]+)/?$ restaurants.php?city=$1 [L,QSA]
+</IfModule>
+
+# Don't let anyone browse the raw directory listings.
+Options -Indexes
+
+# Never serve secrets or source data over HTTP. Without this, /.env is
+# downloadable and hands out every API key in plain text.
+<FilesMatch "(^\.env|^\.env\..*|\.sql|\.log|^\.git.*|composer\.(json|lock))$">
+  Require all denied
+</FilesMatch>
+<FilesMatch "^\.">
+  Require all denied
+</FilesMatch>

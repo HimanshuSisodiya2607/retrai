@@ -492,3 +492,66 @@ model-viewer button[slot="ar-button"]{position:absolute;bottom:14px;right:14px;z
 @media(max-width:640px){
   .ar-savebar{flex-direction:column;align-items:stretch;text-align:center;}
 }
+
+/* ---- Topbar search (replaces the static pill) ---- */
+.search-box{position:relative;padding:0;overflow:visible;}
+.search-box .si-icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:13px;opacity:0.65;pointer-events:none;}
+.search-box input{
+  width:100%;background:transparent;border:none;outline:none;color:var(--text-hi);
+  font-family:inherit;font-size:13px;padding:10px 14px 10px 38px;border-radius:100px;
+}
+.search-box input::placeholder{color:var(--text-low);}
+.search-box:focus-within{border-color:rgba(255,90,31,0.5);background:var(--glass-strong);}
+.search-box kbd{
+  position:absolute;right:12px;top:50%;transform:translateY(-50%);
+  font-family:var(--font-mono);font-size:10px;color:var(--text-low);
+  border:1px solid var(--line);border-radius:5px;padding:1px 5px;pointer-events:none;
+}
+.search-box:focus-within kbd{display:none;}
+
+.search-results{
+  display:none;position:absolute;top:calc(100% + 8px);right:0;left:0;min-width:300px;
+  background:var(--bg-raised);border:1px solid var(--line);border-radius:14px;
+  box-shadow:0 24px 60px -18px rgba(0,0,0,0.75);padding:6px;z-index:220;
+  max-height:min(60vh,420px);overflow-y:auto;text-align:left;
+}
+.search-results.open{display:block;}
+.search-group{
+  font-family:var(--font-mono);font-size:9.5px;letter-spacing:0.09em;text-transform:uppercase;
+  color:var(--text-low);padding:9px 12px 5px;
+}
+.search-item{
+  display:flex;flex-direction:column;gap:2px;padding:9px 12px;border-radius:9px;
+  text-decoration:none;color:inherit;
+}
+.search-item:hover,.search-item.is-active{background:var(--glass-strong);}
+.search-item .si-title{font-size:13px;color:var(--text-hi);font-weight:500;}
+.search-item .si-sub{font-size:11px;color:var(--text-low);}
+.search-item mark{background:rgba(255,90,31,0.28);color:var(--ember);border-radius:3px;padding:0 1px;}
+.search-empty{padding:16px 14px;font-size:12.5px;color:var(--text-low);text-align:center;}
+
+@media(max-width:900px){
+  .search-box{min-width:0;flex:1;}
+  .search-results{min-width:0;}
+  .search-box kbd{display:none;}
+}
+
+/* ---- Sign out (sidebar footer) ---- */
+.owner-card .owner-meta{min-width:0;flex:1;}
+.owner-card .owner-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.signout-btn{
+  flex-shrink:0;width:30px;height:30px;border-radius:8px;border:1px solid var(--line);
+  background:var(--glass);color:var(--text-low);display:flex;align-items:center;justify-content:center;
+  font-size:14px;text-decoration:none;transition:all .15s ease;
+}
+.signout-btn:hover{color:var(--signal);border-color:rgba(255,31,76,0.45);background:rgba(255,31,76,0.08);}
+.signout-link{
+  display:block;margin-top:8px;padding:8px 10px;border-radius:9px;
+  font-size:12.5px;color:var(--text-low);text-decoration:none;transition:all .15s ease;
+}
+.signout-link:hover{color:var(--signal);background:rgba(255,31,76,0.07);}
+
+/* ---- Dinetous logo ---- */
+.logo-img{height:30px;width:auto;display:block;mix-blend-mode:screen;}
+.logo{display:flex;align-items:center;gap:8px;}
+@media(max-width:520px){.logo-img{height:26px;}}

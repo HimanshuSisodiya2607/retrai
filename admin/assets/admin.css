@@ -89,3 +89,8 @@
   .stat-tile .v{font-size:22px;}
   .panel{padding:16px 14px;}
 }
+
+/* ---- Dinetous logo ---- */
+.logo-img{height:30px;width:auto;display:block;mix-blend-mode:screen;}
+.logo{display:flex;align-items:center;gap:8px;}
+@media(max-width:520px){.logo-img{height:26px;}}

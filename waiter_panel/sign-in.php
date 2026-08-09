@@ -43,15 +43,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<link rel="icon" type="image/png" href="../assets/logo-icon.png">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Waiter Sign In — RestroAI</title>
+<title>Waiter Sign In — Dinetous</title>
 <link rel="stylesheet" href="../Restro/assets/style.css">
 </head>
 <body class="auth-page">
 <div id="bg-glow"></div>
 <div class="auth-grain"></div>
 <div class="auth-wrap">
-  <a href="../index.html" class="auth-logo"><span class="logo-dot"></span>RestroAI</a>
+  <a href="../index.html" class="auth-logo"><img src="../assets/logo.png" alt="Dinetous" class="logo-img"></a>
   <div class="auth-card">
     <div class="auth-card-head">
       <span class="auth-eyebrow">Waiter Panel</span>

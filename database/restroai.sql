@@ -1,5 +1,5 @@
 -- =============================================================================
--- RestroAI — Multi-tenant restaurant database
+-- Dinetous — Multi-tenant restaurant database
 -- =============================================================================
 --
 -- WORKFLOW (maps to the current website)
@@ -413,4 +413,44 @@ CREATE TABLE IF NOT EXISTS ar_requests (
   KEY idx_ar_restro (restro_key),
   CONSTRAINT fk_ar_item FOREIGN KEY (item_key)
     REFERENCES items(item_key) ON UPDATE CASCADE ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================================
+-- Public directory fields.
+-- `slug` gives each restaurant a stable, SEO-friendly URL
+-- (/r/spice-bazaar). `city_slug` is the normalized form of the
+-- free-text city so /restaurants/bikaner groups reliably.
+-- `is_listed` lets a restaurant opt out of the public directory.
+-- ============================================================
+ALTER TABLE restaurants
+  ADD COLUMN slug        VARCHAR(160) NULL AFTER restaurant_name,
+  ADD COLUMN city_slug   VARCHAR(100) NULL AFTER city,
+  ADD COLUMN tagline     VARCHAR(200) NULL AFTER cuisine,
+  ADD COLUMN is_listed   TINYINT(1) NOT NULL DEFAULT 1 AFTER is_active,
+  ADD UNIQUE KEY uq_restaurants_slug (slug),
+  ADD KEY idx_restaurants_city_slug (city_slug, is_listed);
+
+-- ============================================================
+-- payments — signup fees collected through Razorpay.
+-- A row is created before checkout opens and only marked 'paid'
+-- after the signature verifies, so this doubles as the audit
+-- trail for what was actually charged.
+-- ============================================================
+CREATE TABLE IF NOT EXISTS payments (
+  id                  INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  payment_key         VARCHAR(32)  NOT NULL,
+  restro_key          VARCHAR(32)  NULL COMMENT 'Set once the account is created',
+  email               VARCHAR(180) NOT NULL,
+  razorpay_order_id   VARCHAR(64)  NOT NULL,
+  razorpay_payment_id VARCHAR(64)  NULL,
+  amount              INT UNSIGNED NOT NULL COMMENT 'In paise',
+  currency            VARCHAR(8)   NOT NULL DEFAULT 'INR',
+  purpose             VARCHAR(40)  NOT NULL DEFAULT 'signup',
+  status              ENUM('created','paid','failed') NOT NULL DEFAULT 'created',
+  created_at          DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  paid_at             DATETIME     NULL,
+  UNIQUE KEY uq_payment_key (payment_key),
+  UNIQUE KEY uq_rzp_order (razorpay_order_id),
+  KEY idx_payments_email (email),
+  KEY idx_payments_status (status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

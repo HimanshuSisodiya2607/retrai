@@ -1,9 +1,126 @@
 <?php
 session_start();
 require_once __DIR__ . '/database/db.php';
+require_once __DIR__ . '/includes/directory.php';
+
+require_once __DIR__ . '/includes/razorpay.php';
 
 $error = '';
+$stage = 'form';          // 'form' | 'pay'
+$checkout = null;         // data handed to Razorpay Checkout
 
+/**
+ * Create the restaurant, its tables and its session. Called only after a
+ * payment has been verified.
+ */
+function complete_signup(mysqli $conn, array $d): string {
+    $restro_key = 'rst_' . bin2hex(random_bytes(6));
+    $phone_db = $d['phone'] !== '' ? $d['phone'] : null;
+    $cuisine_db = $d['cuisine'] !== '' ? $d['cuisine'] : null;
+    $city_db = $d['city'] !== '' ? $d['city'] : null;
+
+    $ins = mysqli_prepare($conn, "
+        INSERT INTO restaurants (
+            restro_key, restaurant_name, owner_name, email, password,
+            phone, cuisine, city, plan_name, billing_cycle
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ");
+    mysqli_stmt_bind_param(
+        $ins, 'ssssssssss',
+        $restro_key, $d['restaurant_name'], $d['owner_name'], $d['email'], $d['password'],
+        $phone_db, $cuisine_db, $city_db, $d['plan_name'], $d['billing_cycle']
+    );
+    mysqli_stmt_execute($ins);
+    mysqli_stmt_close($ins);
+
+    sync_restaurant_directory_fields($conn, $restro_key);
+
+    if ($d['table_count'] > 0) {
+        $tbl_ins = mysqli_prepare($conn, "
+            INSERT INTO restaurant_tables (table_key, restro_key, table_name, seats)
+            VALUES (?, ?, ?, 4)
+        ");
+        for ($i = 1; $i <= $d['table_count']; $i++) {
+            $table_key = 'tbl_' . bin2hex(random_bytes(6));
+            $table_name = 'T-' . str_pad((string) $i, 2, '0', STR_PAD_LEFT);
+            mysqli_stmt_bind_param($tbl_ins, 'sss', $table_key, $restro_key, $table_name);
+            mysqli_stmt_execute($tbl_ins);
+        }
+        mysqli_stmt_close($tbl_ins);
+    }
+
+    $_SESSION['restro_key'] = $restro_key;
+    $_SESSION['restaurant_name'] = $d['restaurant_name'];
+    $_SESSION['owner_name'] = $d['owner_name'];
+    return $restro_key;
+}
+
+// ---------------------------------------------------------------------
+// Step 2 — payment came back from Razorpay Checkout.
+// Nothing here is trusted until the signature verifies.
+// ---------------------------------------------------------------------
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['verify_payment'])) {
+    $pending = $_SESSION['pending_signup'] ?? null;
+    $order_id = trim($_POST['razorpay_order_id'] ?? '');
+    $payment_id = trim($_POST['razorpay_payment_id'] ?? '');
+    $signature = trim($_POST['razorpay_signature'] ?? '');
+
+    if (!$pending) {
+        $error = 'Your signup session expired. Please fill the form again.';
+    } elseif ($order_id === '' || $order_id !== $pending['order_id']) {
+        // Guards against replaying someone else's paid order.
+        $error = 'Payment could not be matched to your signup. Nothing was charged twice — please try again.';
+    } elseif (!razorpay_verify_signature($order_id, $payment_id, $signature)) {
+        $error = 'We could not verify this payment. If money was deducted it will be refunded automatically.';
+        $upd = mysqli_prepare($conn, "UPDATE payments SET status = 'failed' WHERE razorpay_order_id = ?");
+        mysqli_stmt_bind_param($upd, 's', $order_id);
+        mysqli_stmt_execute($upd);
+        mysqli_stmt_close($upd);
+    } else {
+        // Signature is good. Confirm with Razorpay that it really was
+        // captured for the amount we asked for.
+        $check = razorpay_fetch_payment($payment_id);
+        $paid_ok = $check['ok']
+            && in_array($check['payment']['status'] ?? '', ['captured', 'authorized'], true)
+            && (int) ($check['payment']['amount'] ?? 0) === SIGNUP_FEE_PAISE;
+
+        if (!$paid_ok) {
+            $error = $check['ok']
+                ? 'That payment was not completed. Please try again.'
+                : $check['error'];
+        } else {
+            // Guard the rare case where the email was taken while paying.
+            $chk = mysqli_prepare($conn, "SELECT id FROM restaurants WHERE email = ?");
+            mysqli_stmt_bind_param($chk, 's', $pending['email']);
+            mysqli_stmt_execute($chk);
+            $taken = mysqli_fetch_assoc(mysqli_stmt_get_result($chk));
+            mysqli_stmt_close($chk);
+
+            if ($taken) {
+                $error = 'An account with this email was created in the meantime. Please sign in.';
+            } else {
+                $restro_key = complete_signup($conn, $pending);
+
+                $upd = mysqli_prepare($conn, "
+                    UPDATE payments
+                    SET status = 'paid', razorpay_payment_id = ?, restro_key = ?, paid_at = NOW()
+                    WHERE razorpay_order_id = ?
+                ");
+                mysqli_stmt_bind_param($upd, 'sss', $payment_id, $restro_key, $order_id);
+                mysqli_stmt_execute($upd);
+                mysqli_stmt_close($upd);
+
+                unset($_SESSION['pending_signup']);
+                header('Location: Restro/overview.php');
+                exit;
+            }
+        }
+    }
+}
+
+// ---------------------------------------------------------------------
+// Step 1 — validate the form, then open checkout.
+// ---------------------------------------------------------------------
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['register'])) {
     $restaurant_name = trim($_POST['restaurant_name'] ?? '');
     $owner_name = trim($_POST['owner_name'] ?? '');
@@ -34,45 +151,61 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['register'])) {
 
         if ($exists) {
             $error = 'An account with this email already exists. Please sign in instead.';
+        } elseif (!razorpay_configured()) {
+            $error = 'Payments are not configured on this server. Please contact support.';
         } else {
-            $restro_key = 'rst_' . bin2hex(random_bytes(6));
-            $phone_db = $phone !== '' ? $phone : null;
-            $cuisine_db = $cuisine !== '' ? $cuisine : null;
-            $city_db = $city !== '' ? $city : null;
+            // Everything the account needs, held server-side. The browser
+            // never gets to change the plan or the price after this point.
+            $pending = [
+                'restaurant_name' => $restaurant_name,
+                'owner_name'      => $owner_name,
+                'email'           => $email,
+                'password'        => $password,
+                'phone'           => $phone,
+                'cuisine'         => $cuisine,
+                'city'            => $city,
+                'table_count'     => $table_count,
+                'plan_name'       => $plan_name,
+                'billing_cycle'   => $billing_cycle,
+            ];
 
-            $ins = mysqli_prepare($conn, "
-                INSERT INTO restaurants (
-                    restro_key, restaurant_name, owner_name, email, password,
-                    phone, cuisine, city, plan_name, billing_cycle
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ");
-            mysqli_stmt_bind_param(
-                $ins, 'ssssssssss',
-                $restro_key, $restaurant_name, $owner_name, $email, $password,
-                $phone_db, $cuisine_db, $city_db, $plan_name, $billing_cycle
-            );
-            mysqli_stmt_execute($ins);
-            mysqli_stmt_close($ins);
+            $receipt = 'signup_' . bin2hex(random_bytes(6));
+            $created = razorpay_create_order(SIGNUP_FEE_PAISE, $receipt, [
+                'purpose'    => 'Dinetous signup',
+                'restaurant' => $restaurant_name,
+                'email'      => $email,
+            ]);
 
-            if ($table_count > 0) {
-                $tbl_ins = mysqli_prepare($conn, "
-                    INSERT INTO restaurant_tables (table_key, restro_key, table_name, seats)
-                    VALUES (?, ?, ?, 4)
+            if (!$created['ok']) {
+                $error = $created['error'];
+            } else {
+                $order = $created['order'];
+                $pending['order_id'] = $order['id'];
+                $_SESSION['pending_signup'] = $pending;
+
+                $payment_key = 'pay_' . bin2hex(random_bytes(6));
+                $amount = SIGNUP_FEE_PAISE;
+                $ins = mysqli_prepare($conn, "
+                    INSERT INTO payments (payment_key, email, razorpay_order_id, amount, currency, purpose, status)
+                    VALUES (?, ?, ?, ?, 'INR', 'signup', 'created')
                 ");
-                for ($i = 1; $i <= $table_count; $i++) {
-                    $table_key = 'tbl_' . bin2hex(random_bytes(6));
-                    $table_name = 'T-' . str_pad((string) $i, 2, '0', STR_PAD_LEFT);
-                    mysqli_stmt_bind_param($tbl_ins, 'sss', $table_key, $restro_key, $table_name);
-                    mysqli_stmt_execute($tbl_ins);
-                }
-                mysqli_stmt_close($tbl_ins);
-            }
+                mysqli_stmt_bind_param($ins, 'sssi', $payment_key, $email, $order['id'], $amount);
+                mysqli_stmt_execute($ins);
+                mysqli_stmt_close($ins);
 
-            $_SESSION['restro_key'] = $restro_key;
-            $_SESSION['restaurant_name'] = $restaurant_name;
-            $_SESSION['owner_name'] = $owner_name;
-            header('Location: Restro/overview.php');
-            exit;
+                $stage = 'pay';
+                $checkout = [
+                    'key'      => razorpay_key_id(),
+                    'amount'   => $order['amount'],
+                    'currency' => $order['currency'],
+                    'order_id' => $order['id'],
+                    'name'     => $restaurant_name,
+                    'owner'    => $owner_name,
+                    'email'    => $email,
+                    'phone'    => $phone,
+                    'plan'     => $plan_name,
+                ];
+            }
         }
     }
 }
@@ -83,8 +216,9 @@ $post = $_SERVER['REQUEST_METHOD'] === 'POST' ? $_POST : [];
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<link rel="icon" type="image/png" href="assets/logo-icon.png">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Start Modernizing — RestroAI</title>
+<title>Start Modernizing — Dinetous</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -326,6 +460,30 @@ $post = $_SERVER['REQUEST_METHOD'] === 'POST' ? $_POST : [];
     *{animation-duration:0.01ms !important;animation-iteration-count:1 !important;transition-duration:0.01ms !important;}
   }
   :focus-visible{outline:2px solid var(--ember);outline-offset:3px;}
+  /* ---------- payment stage ---------- */
+  .pay-summary{
+    background:rgba(255,255,255,0.03);border:1px solid var(--line);
+    border-radius:14px;padding:6px 18px;margin-bottom:4px;
+  }
+  .pay-row{
+    display:flex;justify-content:space-between;align-items:center;gap:14px;
+    padding:12px 0;border-bottom:1px solid rgba(255,255,255,0.06);font-size:13.5px;
+    color:var(--text-mid);
+  }
+  .pay-row:last-child{border-bottom:none;}
+  .pay-row strong{color:var(--text-hi);font-weight:600;text-align:right;word-break:break-word;}
+  .pay-row.total{border-top:1px solid var(--line);margin-top:2px;padding-top:14px;font-size:15px;}
+  .pay-row.total strong{font-family:var(--font-mono);color:var(--ember);font-size:19px;}
+  .pay-status{
+    margin-top:18px;padding:12px 15px;border-radius:11px;font-size:13px;line-height:1.55;
+    background:var(--glass);border:1px solid var(--line);color:var(--text-mid);
+  }
+  .pay-status.ok{background:rgba(74,222,128,0.1);border-color:rgba(74,222,128,0.3);color:#4ade80;}
+  .pay-status.warn{background:rgba(255,179,71,0.1);border-color:rgba(255,179,71,0.32);color:var(--amber);}
+  .pay-status.err{background:rgba(255,31,76,0.1);border-color:rgba(255,31,76,0.3);color:#ff6b6b;}
+  #payBtn:disabled{opacity:0.6;cursor:default;transform:none;}
+  .logo-img{height:30px;width:auto;display:block;mix-blend-mode:screen;}
+  @media(max-width:520px){.logo-img{height:25px;}}
 </style>
 </head>
 <body>
@@ -337,7 +495,7 @@ $post = $_SERVER['REQUEST_METHOD'] === 'POST' ? $_POST : [];
 <header>
   <div class="wrap">
     <nav>
-      <div class="logo"><span class="logo-dot"></span>RestroAI</div>
+      <div class="logo"><img src="assets/logo.png" alt="Dinetous" class="logo-img"></div>
       <a href="index.html" class="back-link">← Back to home</a>
     </nav>
   </div>
@@ -366,6 +524,129 @@ $post = $_SERVER['REQUEST_METHOD'] === 'POST' ? $_POST : [];
 
       <div class="panel" style="margin-top:30px;">
 
+        <?php if ($error !== ''): ?>
+          <div class="pay-status err" style="margin-bottom:20px;display:block;">
+            <?php echo htmlspecialchars($error); ?>
+          </div>
+        <?php endif; ?>
+
+        <?php if ($stage === 'pay'): ?>
+
+        <div class="pay-stage">
+          <h2 style="font-size:20px;margin-bottom:8px;">Confirm &amp; pay</h2>
+          <p style="color:var(--text-mid);font-size:13.5px;line-height:1.65;margin-bottom:22px;">
+            One last step. We charge <strong>₹1</strong> to verify your payment method —
+            your account is created the moment it succeeds.
+          </p>
+
+          <div class="pay-summary">
+            <div class="pay-row"><span>Restaurant</span><strong><?php echo htmlspecialchars($checkout['name']); ?></strong></div>
+            <div class="pay-row"><span>Owner</span><strong><?php echo htmlspecialchars($checkout['owner']); ?></strong></div>
+            <div class="pay-row"><span>Email</span><strong><?php echo htmlspecialchars($checkout['email']); ?></strong></div>
+            <div class="pay-row"><span>Plan</span><strong><?php echo htmlspecialchars($checkout['plan']); ?></strong></div>
+            <div class="pay-row total"><span>Amount due today</span><strong>₹<?php echo number_format($checkout['amount'] / 100, 2); ?></strong></div>
+          </div>
+
+          <div id="payStatus" class="pay-status" style="display:none;"></div>
+
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:20px;">
+            <button type="button" class="btn btn-primary btn-lg" id="payBtn">Pay ₹1 &amp; create account</button>
+            <a href="onboarding.php" class="btn btn-ghost btn-lg">← Edit details</a>
+          </div>
+
+          <p style="color:var(--text-low);font-size:11.5px;margin-top:16px;line-height:1.6;">
+            Payment is handled by Razorpay. We never see or store your card details.
+            Test mode — use card <span style="font-family:var(--font-mono);">4111 1111 1111 1111</span>,
+            any future expiry, any CVV.
+          </p>
+        </div>
+
+        <form method="post" action="onboarding.php" id="verifyForm" style="display:none;">
+          <input type="hidden" name="verify_payment" value="1">
+          <input type="hidden" name="razorpay_payment_id" id="rzpPaymentId">
+          <input type="hidden" name="razorpay_order_id" id="rzpOrderId">
+          <input type="hidden" name="razorpay_signature" id="rzpSignature">
+        </form>
+
+        <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+        <script>
+        (function () {
+          var CHECKOUT = <?php echo json_encode([
+              'key'      => $checkout['key'],
+              'amount'   => $checkout['amount'],
+              'currency' => $checkout['currency'],
+              'order_id' => $checkout['order_id'],
+              'name'     => $checkout['name'],
+              'owner'    => $checkout['owner'],
+              'email'    => $checkout['email'],
+              'phone'    => $checkout['phone'],
+              'plan'     => $checkout['plan'],
+          ], JSON_UNESCAPED_SLASHES); ?>;
+
+          var btn = document.getElementById('payBtn');
+          var status = document.getElementById('payStatus');
+
+          function say(msg, kind) {
+            status.textContent = msg;
+            status.className = 'pay-status ' + (kind || '');
+            status.style.display = 'block';
+          }
+
+          function openCheckout() {
+            if (typeof Razorpay === 'undefined') {
+              say('Could not load the payment window. Check your internet connection and try again.', 'err');
+              return;
+            }
+            btn.disabled = true;
+            btn.textContent = 'Opening payment…';
+
+            var rzp = new Razorpay({
+              key: CHECKOUT.key,
+              amount: CHECKOUT.amount,
+              currency: CHECKOUT.currency,
+              order_id: CHECKOUT.order_id,
+              name: 'Dinetous',
+              description: CHECKOUT.plan + ' plan — signup verification',
+              prefill: {
+                name: CHECKOUT.owner,
+                email: CHECKOUT.email,
+                contact: CHECKOUT.phone || ''
+              },
+              notes: { restaurant: CHECKOUT.name },
+              theme: { color: '#ff5a1f' },
+              // The server re-checks this signature before creating anything.
+              handler: function (res) {
+                document.getElementById('rzpPaymentId').value = res.razorpay_payment_id || '';
+                document.getElementById('rzpOrderId').value = res.razorpay_order_id || '';
+                document.getElementById('rzpSignature').value = res.razorpay_signature || '';
+                say('Payment received. Setting up your account…', 'ok');
+                document.getElementById('verifyForm').submit();
+              },
+              modal: {
+                ondismiss: function () {
+                  btn.disabled = false;
+                  btn.textContent = 'Pay ₹1 & create account';
+                  say('Payment was cancelled. Your account has not been created yet — press the button to try again.', 'warn');
+                }
+              }
+            });
+
+            rzp.on('payment.failed', function (e) {
+              btn.disabled = false;
+              btn.textContent = 'Try payment again';
+              say((e.error && e.error.description) ? e.error.description : 'That payment did not go through. Please try again.', 'err');
+            });
+
+            rzp.open();
+          }
+
+          btn.addEventListener('click', openCheckout);
+          openCheckout(); // open straight away; the button is the retry path
+        })();
+        </script>
+
+        <?php else: ?>
+
         <form id="onboardForm" method="post" action="onboarding.php">
           <input type="hidden" name="register" id="registerField" value="0">
           <input type="hidden" name="plan_name" id="planNameField" value="<?php echo htmlspecialchars($post['plan_name'] ?? 'Growth'); ?>">
@@ -373,7 +654,7 @@ $post = $_SERVER['REQUEST_METHOD'] === 'POST' ? $_POST : [];
           <!-- STEP 1 -->
           <div class="step-panel active" data-panel="0">
             <h2>Tell us about your restaurant</h2>
-            <p class="step-sub">This builds the foundation of your RestroAI system.</p>
+            <p class="step-sub">This builds the foundation of your Dinetous system.</p>
 
             <div class="field">
               <label>Restaurant name</label>
@@ -394,7 +675,13 @@ $post = $_SERVER['REQUEST_METHOD'] === 'POST' ? $_POST : [];
               </div>
               <div class="field">
                 <label>City</label>
-                <input type="text" id="city" name="city" placeholder="e.g. Jodhpur" value="<?php echo htmlspecialchars($post['city'] ?? ''); ?>">
+                <input type="text" id="city" name="city" list="cityOptions" autocomplete="address-level2"
+                       placeholder="e.g. Bikaner" value="<?php echo htmlspecialchars($post['city'] ?? ''); ?>">
+                <datalist id="cityOptions">
+                  <?php foreach (directory_cities() as $c): ?>
+                    <option value="<?php echo htmlspecialchars($c); ?>"></option>
+                  <?php endforeach; ?>
+                </datalist>
               </div>
             </div>
             <div class="field">
@@ -493,32 +780,18 @@ $post = $_SERVER['REQUEST_METHOD'] === 'POST' ? $_POST : [];
             <div class="order-summary">
               <div class="review-row"><span class="k">Plan</span><span class="v" id="paySummaryPlan">Growth</span></div>
               <div class="review-row"><span class="k">Billing cycle</span><span class="v" id="paySummaryCycle">Monthly</span></div>
-              <div class="review-row"><span class="k">Subtotal</span><span class="v" id="paySummarySubtotal">₹6,999</span></div>
+              <div class="review-row"><span class="k">Subscription</span><span class="v" id="paySummarySubtotal">₹6,999</span></div>
               <div class="review-row"><span class="k">GST (18%)</span><span class="v" id="paySummaryTax">₹1,260</span></div>
-              <div class="review-row total-row"><span class="k">Total due today</span><span class="v" id="paySummaryTotal">₹8,259</span></div>
+              <div class="review-row"><span class="k">Billed from</span><span class="v" id="paySummaryStart">After your free setup period</span></div>
+              <div class="review-row total-row"><span class="k">Due today</span><span class="v" id="paySummaryTotal">₹1</span></div>
             </div>
 
             <div id="cardFieldsWrap">
-              <div class="field" style="margin-top:22px;">
-                <label>Name on card</label>
-                <input type="text" id="cardName" placeholder="e.g. Aarav Sharma">
+              <div class="secure-note" style="margin-top:22px;">
+                🔒 We charge <strong>₹1</strong> now to verify your payment method. You'll enter your
+                card on Razorpay's secure window after this step — Dinetous never sees or stores your
+                card details.
               </div>
-              <div class="field">
-                <label>Card number</label>
-                <input type="text" id="cardNumber" inputmode="numeric" placeholder="1234 1234 1234 1234" maxlength="19">
-              </div>
-              <div class="field-row">
-                <div class="field">
-                  <label>Expiry (MM/YY)</label>
-                  <input type="text" id="cardExpiry" placeholder="MM/YY" maxlength="5">
-                </div>
-                <div class="field">
-                  <label>CVV</label>
-                  <input type="text" id="cardCvv" inputmode="numeric" placeholder="•••" maxlength="4">
-                </div>
-              </div>
-
-              <div class="secure-note">🔒 Payments are encrypted and PCI-DSS compliant · Demo mode, no card is charged</div>
             </div>
 
             <div id="enterpriseNote" style="display:none;margin-top:22px;padding:18px 20px;border:1px solid var(--line);border-radius:14px;background:rgba(255,255,255,0.02);font-size:13.5px;color:var(--text-mid);">
@@ -541,7 +814,6 @@ $post = $_SERVER['REQUEST_METHOD'] === 'POST' ? $_POST : [];
               <div class="review-row"><span class="k">Password</span><span class="v" id="rvPassword">—</span></div>
               <div class="review-row"><span class="k">Plan</span><span class="v" id="rvPlan">—</span></div>
               <div class="review-row"><span class="k">Billing</span><span class="v" id="rvBilling">—</span></div>
-              <div class="review-row"><span class="k">Card</span><span class="v" id="rvCard">—</span></div>
               <div class="review-row total-row"><span class="k">Total charged today</span><span class="v" id="rvTotal">—</span></div>
             </div>
           </div>
@@ -552,10 +824,12 @@ $post = $_SERVER['REQUEST_METHOD'] === 'POST' ? $_POST : [];
           </div>
         </form>
 
+        <?php endif; ?>
+
         <!-- SUCCESS VIEW -->
         <div class="success-view" id="successView">
           <div class="success-ring">✓</div>
-          <h2>Welcome to RestroAI</h2>
+          <h2>Welcome to Dinetous</h2>
           <p>Payment confirmed and your restaurant OS is being provisioned. We're sending your receipt, setup instructions, and QR kit details to <span id="successEmail" style="color:var(--text-hi);">your email</span>.</p>
           <a href="Restro/overview.php" class="btn btn-primary">Go to dashboard</a>
         </div>
@@ -638,10 +912,6 @@ $post = $_SERVER['REQUEST_METHOD'] === 'POST' ? $_POST : [];
     phone: document.getElementById('phone'),
     password: document.getElementById('password'),
     confirmPassword: document.getElementById('confirmPassword'),
-    cardName: document.getElementById('cardName'),
-    cardNumber: document.getElementById('cardNumber'),
-    cardExpiry: document.getElementById('cardExpiry'),
-    cardCvv: document.getElementById('cardCvv'),
   };
 
   function renderStepUI(){
@@ -683,10 +953,11 @@ $post = $_SERVER['REQUEST_METHOD'] === 'POST' ? $_POST : [];
       return;
     }
     const tax = Math.round(subtotal * 0.18);
-    const total = subtotal + tax;
     document.getElementById('paySummarySubtotal').textContent = formatRupee(subtotal) + (billingCycle === 'annual' ? '/yr' : '/mo');
     document.getElementById('paySummaryTax').textContent = formatRupee(tax);
-    document.getElementById('paySummaryTotal').textContent = formatRupee(total);
+    // Only the ₹1 verification charge is taken today — say so plainly
+    // rather than showing a subscription total we don't actually collect.
+    document.getElementById('paySummaryTotal').textContent = '₹1';
   }
 
   function fillReview(){
@@ -700,16 +971,8 @@ $post = $_SERVER['REQUEST_METHOD'] === 'POST' ? $_POST : [];
     document.getElementById('rvPlan').textContent = selectedPlan;
     document.getElementById('rvBilling').textContent = billingCycle === 'monthly' ? 'Monthly' : 'Annual (20% off)';
 
-    const num = els.cardNumber.value.replace(/\s/g,'');
-    document.getElementById('rvCard').textContent = num ? '•••• •••• •••• ' + num.slice(-4) : '—';
-
     const subtotal = pricingFor(selectedPlan);
-    if(subtotal === null){
-      document.getElementById('rvTotal').textContent = 'Custom quote';
-    } else {
-      const total = subtotal + Math.round(subtotal * 0.18);
-      document.getElementById('rvTotal').textContent = formatRupee(total);
-    }
+    document.getElementById('rvTotal').textContent = subtotal === null ? 'Custom quote' : '₹1 today';
   }
 
   function validateStep(){
@@ -731,32 +994,10 @@ $post = $_SERVER['REQUEST_METHOD'] === 'POST' ? $_POST : [];
         return false;
       }
     }
-    if(step === 3 && selectedPlan !== 'Enterprise'){
-      const numDigits = els.cardNumber.value.replace(/\s/g,'');
-      if(!els.cardName.value.trim()){ els.cardName.focus(); return false; }
-      if(numDigits.length < 15){ els.cardNumber.focus(); return false; }
-      if(!/^\d{2}\/\d{2}$/.test(els.cardExpiry.value)){ els.cardExpiry.focus(); return false; }
-      if(els.cardCvv.value.length < 3){ els.cardCvv.focus(); return false; }
-    }
+    // Nothing to validate on the payment step — card details are
+    // collected by Razorpay, not by us.
     return true;
   }
-
-  // card number formatting: groups of 4
-  els.cardNumber.addEventListener('input', () => {
-    let digits = els.cardNumber.value.replace(/\D/g,'').slice(0,16);
-    els.cardNumber.value = digits.replace(/(.{4})/g,'$1 ').trim();
-  });
-
-  // expiry formatting: MM/YY
-  els.cardExpiry.addEventListener('input', () => {
-    let digits = els.cardExpiry.value.replace(/\D/g,'').slice(0,4);
-    if(digits.length >= 3){ digits = digits.slice(0,2) + '/' + digits.slice(2); }
-    els.cardExpiry.value = digits;
-  });
-
-  els.cardCvv.addEventListener('input', () => {
-    els.cardCvv.value = els.cardCvv.value.replace(/\D/g,'').slice(0,4);
-  });
 
   document.querySelectorAll('.pw-toggle').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -805,6 +1046,8 @@ $post = $_SERVER['REQUEST_METHOD'] === 'POST' ? $_POST : [];
     });
   });
 
+  // Enterprise is quoted manually, so it sees a "we'll contact you" note
+  // instead of the ₹1 verification note.
   function toggleCardFormForPlan(){
     const cardFieldsWrap = document.getElementById('cardFieldsWrap');
     const enterpriseNote = document.getElementById('enterpriseNote');
@@ -848,10 +1091,11 @@ $post = $_SERVER['REQUEST_METHOD'] === 'POST' ? $_POST : [];
   renderStepUI();
   updatePreview();
   toggleCardFormForPlan();
-<?php if ($error !== ''): ?>
+<?php if ($error !== '' && $stage !== 'pay'): ?>
+  // The message is already visible in the panel above; just jump the
+  // wizard to the step it relates to.
   step = 4;
   renderStepUI();
-  alert(<?php echo json_encode($error); ?>);
 <?php endif; ?>
 </script>
 
